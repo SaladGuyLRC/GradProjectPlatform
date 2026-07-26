@@ -1,0 +1,123 @@
+package com.projecthelper.knowledge;
+
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class RedisVectorStore {
+    private static final String INDEX = "knowledge_public";
+    private static final String CHUNK_PREFIX = "kb:chunk:";
+    private static final String DOCUMENT_SET_PREFIX = "kb:document:";
+
+    private final StringRedisTemplate redisTemplate;
+    private final KnowledgeProperties properties;
+    private final EmbeddingClient embeddingClient;
+
+    @PostConstruct
+    public void initializeIndex() {
+        try {
+            execute("FT.INFO", bytes(INDEX));
+        } catch (Exception ignored) {
+            try {
+                execute("FT.CREATE",
+                        bytes(INDEX), bytes("ON"), bytes("HASH"), bytes("PREFIX"), bytes("1"), bytes(CHUNK_PREFIX),
+                        bytes("SCHEMA"), bytes("documentId"), bytes("TAG"), bytes("title"), bytes("TEXT"),
+                        bytes("content"), bytes("TEXT"), bytes("chunkIndex"), bytes("NUMERIC"),
+                        bytes("contentVector"), bytes("VECTOR"), bytes("FLAT"), bytes("6"),
+                        bytes("TYPE"), bytes("FLOAT32"), bytes("DIM"), bytes(String.valueOf(properties.getEmbeddingDimension())),
+                        bytes("DISTANCE_METRIC"), bytes("COSINE"));
+                log.info("Created RediSearch index {}", INDEX);
+            } catch (Exception exception) {
+                log.warn("Redis vector index is unavailable: {}", exception.getMessage());
+            }
+        }
+    }
+
+    public int replaceDocument(String documentId, String title, List<String> chunks) {
+        deleteDocument(documentId);
+        String setKey = documentSetKey(documentId);
+        for (int i = 0; i < chunks.size(); i++) {
+            String chunkId = UUID.randomUUID().toString();
+            String redisKey = CHUNK_PREFIX + chunkId;
+            float[] vector = embeddingClient.embed(chunks.get(i));
+            Map<byte[], byte[]> fields = new HashMap<>();
+            fields.put(bytes("documentId"), bytes(documentId));
+            fields.put(bytes("title"), bytes(title));
+            fields.put(bytes("content"), bytes(chunks.get(i)));
+            fields.put(bytes("chunkIndex"), bytes(String.valueOf(i)));
+            fields.put(bytes("contentVector"), vectorBytes(vector));
+            redisTemplate.execute((RedisCallback<Void>) connection -> {
+                connection.hashCommands().hMSet(bytes(redisKey), fields);
+                return null;
+            });
+            redisTemplate.opsForSet().add(setKey, redisKey);
+        }
+        return chunks.size();
+    }
+
+    public void deleteDocument(String documentId) {
+        String setKey = documentSetKey(documentId);
+        Set<String> keys = redisTemplate.opsForSet().members(setKey);
+        if (keys != null && !keys.isEmpty()) redisTemplate.delete(keys);
+        redisTemplate.delete(setKey);
+    }
+
+    public List<SearchHit> search(String question, int topK) {
+        float[] queryVector = embeddingClient.embed(question);
+        Object raw = execute("FT.SEARCH", bytes(INDEX),
+                bytes("*=>[KNN " + topK + " @contentVector $vector AS score]"),
+                bytes("PARAMS"), bytes("2"), bytes("vector"), vectorBytes(queryVector),
+                bytes("SORTBY"), bytes("score"), bytes("RETURN"), bytes("4"),
+                bytes("documentId"), bytes("title"), bytes("content"), bytes("chunkIndex"),
+                bytes("DIALECT"), bytes("2"));
+        return parse(raw);
+    }
+
+    private List<SearchHit> parse(Object raw) {
+        if (!(raw instanceof List<?> list) || list.size() < 3) return List.of();
+        List<SearchHit> hits = new ArrayList<>();
+        for (int i = 1; i + 1 < list.size(); i += 2) {
+            Object fieldsObject = list.get(i + 1);
+            if (!(fieldsObject instanceof List<?> fields)) continue;
+            Map<String, String> values = new HashMap<>();
+            for (int j = 0; j + 1 < fields.size(); j += 2) {
+                values.put(asString(fields.get(j)), asString(fields.get(j + 1)));
+            }
+            if (values.get("documentId") != null && values.get("content") != null) {
+                hits.add(new SearchHit(values.get("documentId"), values.getOrDefault("title", ""),
+                        values.get("content"), Integer.parseInt(values.getOrDefault("chunkIndex", "0"))));
+            }
+        }
+        return hits;
+    }
+
+    private Object execute(String command, byte[]... args) {
+        return redisTemplate.execute((RedisCallback<Object>) connection -> connection.execute(command, args));
+    }
+
+    private byte[] vectorBytes(float[] vector) {
+        ByteBuffer buffer = ByteBuffer.allocate(vector.length * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        for (float value : vector) buffer.putFloat(value);
+        return buffer.array();
+    }
+
+    private byte[] bytes(String value) { return value.getBytes(StandardCharsets.UTF_8); }
+    private String asString(Object value) {
+        if (value instanceof byte[] bytes) return new String(bytes, StandardCharsets.UTF_8);
+        return String.valueOf(value);
+    }
+    private String documentSetKey(String documentId) { return DOCUMENT_SET_PREFIX + documentId + ":chunks"; }
+
+    public record SearchHit(String documentId, String title, String content, int chunkIndex) {}
+}
