@@ -4,6 +4,7 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://127.0.0.1:27017/project_helper}
+      auto-index-creation: true
     redis:
       host: ${REDIS_HOST:127.0.0.1}
       port: ${REDIS_PORT:6379}
@@ -35,7 +36,8 @@ app:
     chunk-size: 500
     chunk-overlap: 50
   seed:
-    enabled: ${SEED_ENABLED:true}
+    enabled: ${SEED_ENABLED:false}
+    default-password: ${SEED_DEFAULT_PASSWORD:ProjectHelper@123}
 
 logging:
   level:
