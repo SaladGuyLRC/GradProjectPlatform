@@ -1,0 +1,38 @@
+# Operating systems and IDEs
+**/.DS_Store
+**/.idea/
+**/.vscode/
+*.iml
+
+# Java build output
+**/target/
+*.class
+
+# Frontend dependencies and output
+**/node_modules/
+**/dist/
+**/.vite/
+*.tsbuildinfo
+
+# Local configuration and secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+*.pem
+*.key
+*.p12
+*.jks
+
+# Runtime data, uploads and logs
+**/data/
+**/upload/
+**/uploads/
+**/logs/
+*.log
+
+# Agent-local configuration
+**/.claude/
+**/.codex/

@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: project-helper
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://127.0.0.1:27017/project_helper}
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      timeout: 5s
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:replace-me}
+      base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      chat:
+        options:
+          model: ${DASHSCOPE_CHAT_MODEL:qwen-max}
+          temperature: 0.3
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:project-helper-local-development-secret-key-change-before-production}
+    expire-seconds: ${JWT_EXPIRE_SECONDS:86400}
+  knowledge:
+    storage-path: ${KNOWLEDGE_STORAGE_PATH:data/knowledge}
+    embedding-model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v3}
+    embedding-dimension: ${EMBEDDING_DIMENSION:1024}
+    chunk-size: 500
+    chunk-overlap: 50
+  seed:
+    enabled: ${SEED_ENABLED:true}
+
+logging:
+  level:
+    root: INFO
+    com.projecthelper: INFO
