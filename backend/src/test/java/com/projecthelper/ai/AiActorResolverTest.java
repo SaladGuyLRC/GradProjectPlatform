@@ -31,7 +31,8 @@ class AiActorResolverTest {
         AiActorResolver resolver = new AiActorResolver(currentUser, users);
 
         assertEquals(student, resolver.targetStudent(null, true));
-        assertThrows(BusinessException.class, () -> resolver.targetStudent("Bob", true));
+        BusinessException denied = assertThrows(BusinessException.class, () -> resolver.targetStudent("Bob", true));
+        assertEquals(403, denied.getStatus().value());
     }
 
     @Test
@@ -44,7 +45,8 @@ class AiActorResolverTest {
 
         assertEquals(assigned, resolver.targetStudent("Alice", true));
         when(users.findByMentorIdAndRealName("m1", "Bob")).thenReturn(List.of());
-        assertThrows(BusinessException.class, () -> resolver.targetStudent("Bob", true));
+        BusinessException denied = assertThrows(BusinessException.class, () -> resolver.targetStudent("Bob", true));
+        assertEquals(404, denied.getStatus().value());
     }
 
     @Test
@@ -53,6 +55,7 @@ class AiActorResolverTest {
         when(currentUser.require()).thenReturn(admin);
         AiActorResolver resolver = new AiActorResolver(currentUser, users);
 
-        assertThrows(BusinessException.class, () -> resolver.targetStudent(null, true));
+        BusinessException denied = assertThrows(BusinessException.class, () -> resolver.targetStudent(null, true));
+        assertEquals(403, denied.getStatus().value());
     }
 }

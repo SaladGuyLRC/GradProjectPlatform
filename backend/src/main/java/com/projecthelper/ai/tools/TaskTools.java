@@ -28,7 +28,7 @@ public class TaskTools {
 
     @Tool(description = "Create a graduation project task only when the user explicitly asks. Do not call without a target student, title and deadline.")
     public String createTask(
-            @ToolParam(description = "Assigned student name for a mentor; omit for a student") String studentName,
+            @ToolParam(description = "Assigned student name for a mentor; omit for a student", required = false) String studentName,
             @ToolParam(description = "Task title") String title,
             @ToolParam(description = "Task description", required = false) String description,
             @ToolParam(description = "MEETING, PROGRESS, DOCUMENT, CODE, EXPERIMENT or OTHER") String type,

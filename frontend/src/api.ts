@@ -18,7 +18,11 @@ api.interceptors.response.use(
   },
   (error) => {
     const status = error.response?.status
-    const message = error.response?.data?.message || (status === 403 ? '没有访问权限' : '请求失败，请稍后重试')
+    const message = status === 401 ? 'Your session has expired. Please sign in again.'
+      : status === 403 ? 'You do not have permission to perform this action.'
+        : status === 400 ? 'The request could not be completed. Check the submitted values.'
+          : status && status >= 500 ? 'The server is temporarily unavailable.'
+            : 'The request failed. Please try again.'
     if (status === 401) {
       localStorage.removeItem('ph_token')
       localStorage.removeItem('ph_user')
