@@ -29,11 +29,11 @@ Requirements: Java 21, Maven, Node.js 18+, Docker and Docker Compose.
    npm run dev
    ```
 
-The frontend is served at `http://localhost:5173` and proxies `/api` to `http://127.0.0.1:8080`. Set `VITE_API_BASE_URL` and `VITE_API_PROXY_TARGET` when using a different deployment.
+The frontend is served at `http://localhost:5173` and proxies `/api` to `http://127.0.0.1:8080`. Set `VITE_API_BASE_URL` and `VITE_API_PROXY_TARGET` when using a different deployment. Java 21 must be selected through your local JDK manager if it is not the default JDK.
 
 ## Demo data
 
-Set `SEED_ENABLED=true` before starting the backend. The idempotent demo accounts use the password `ProjectHelper@123`:
+Set `SEED_ENABLED=true` before starting the backend. The idempotent demo accounts use the local-only password `ProjectHelper@123`; change `SEED_DEFAULT_PASSWORD` before sharing or deploying the application:
 
 | Username | Role | Purpose |
 | --- | --- | --- |
