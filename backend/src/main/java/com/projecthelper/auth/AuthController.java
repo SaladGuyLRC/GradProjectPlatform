@@ -28,9 +28,9 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "用户名或密码错误"));
+                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid username or password"));
         if (user.getStatus() != UserStatus.ACTIVE || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            throw new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "用户名或密码错误");
+            throw new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid username or password");
         }
         return ApiResponse.success(new LoginResponse(jwtService.create(user.getId()), jwtProperties.getExpireSeconds(), UserView.of(user)));
     }
@@ -44,7 +44,7 @@ public class AuthController {
     public ApiResponse<Void> updatePassword(@Valid @RequestBody PasswordRequest request) {
         User user = currentUserService.require();
         if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
-            throw BusinessException.badRequest("原密码错误");
+            throw BusinessException.badRequest("Current password is incorrect");
         }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);

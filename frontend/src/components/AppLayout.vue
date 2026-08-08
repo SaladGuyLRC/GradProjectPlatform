@@ -25,7 +25,7 @@ function logout() { auth.logout(); router.replace('/login') }
 <template>
   <div class="app-shell">
     <div class="mobile-topbar">
-      <el-button :icon="MenuIcon" circle aria-label="打开导航" @click="mobileOpen = true" />
+      <el-button :icon="MenuIcon" circle aria-label="Open navigation" @click="mobileOpen = true" />
       <strong>ProjectHelper</strong>
     </div>
     <aside class="sidebar">
@@ -37,8 +37,8 @@ function logout() { auth.logout(); router.replace('/login') }
       </nav>
       <div class="user-panel">
         <div class="avatar">{{ auth.user?.realName?.slice(0, 1) || '?' }}</div>
-        <div class="user-copy"><strong>{{ auth.user?.realName || '加载中' }}</strong><small>{{ auth.user?.role }}</small></div>
-        <el-button :icon="SwitchButton" text circle title="退出登录" aria-label="退出登录" @click="logout" />
+        <div class="user-copy"><strong>{{ auth.user?.realName || 'Loading' }}</strong><small>{{ auth.user?.role }}</small></div>
+        <el-button :icon="SwitchButton" text circle title="Log out" aria-label="Log out" @click="logout" />
       </div>
     </aside>
     <main class="main-content"><router-view /></main>

@@ -20,21 +20,21 @@ public class AiActorResolver {
         User actor = currentUserService.require();
         if (actor.getRole() == UserRole.STUDENT) {
             if (studentName != null && !studentName.isBlank() && !actor.getRealName().equals(studentName.trim())) {
-                throw BusinessException.forbidden("学生只能查询自己的数据");
+                throw BusinessException.forbidden("Students can only query their own data");
             }
             return actor;
         }
         if (actor.getRole() == UserRole.MENTOR) {
             if ((studentName == null || studentName.isBlank()) && mentorRequiresName) {
-                throw BusinessException.badRequest("请说明学生姓名");
+                throw BusinessException.badRequest("Provide the student's name");
             }
             List<User> students = studentName == null || studentName.isBlank()
                     ? userRepository.findByMentorIdOrderByRealName(actor.getId())
                     : userRepository.findByMentorIdAndRealName(actor.getId(), studentName.trim());
-            if (students.isEmpty()) throw BusinessException.notFound("未找到名下学生");
-            if (students.size() > 1) throw BusinessException.conflict("学生不唯一，请提供更明确的信息");
+            if (students.isEmpty()) throw BusinessException.notFound("No assigned student was found");
+            if (students.size() > 1) throw BusinessException.conflict("The student is not unique; provide more detail");
             return students.getFirst();
         }
-        throw BusinessException.forbidden("管理员AI不读取学生业务数据");
+        throw BusinessException.forbidden("Administrators cannot use AI to read student business data");
     }
 }

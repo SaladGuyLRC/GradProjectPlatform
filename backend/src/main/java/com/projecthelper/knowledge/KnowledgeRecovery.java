@@ -18,7 +18,7 @@ public class KnowledgeRecovery implements ApplicationRunner {
         repository.findByStatusAndUpdatedAtBefore(KnowledgeStatus.PROCESSING, Instant.now().minus(10, ChronoUnit.MINUTES))
                 .forEach(document -> {
                     document.setStatus(KnowledgeStatus.FAILED);
-                    document.setFailureReason("应用重启或索引任务超时，请重新索引");
+                    document.setFailureReason("The application restarted or indexing timed out. Reindex the document.");
                     document.setUpdatedAt(Instant.now());
                     repository.save(document);
                 });

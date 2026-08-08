@@ -33,7 +33,7 @@ public class AdminUserController {
     @PostMapping
     public ApiResponse<UserView> create(@Valid @RequestBody UserRequest request) {
         validate(request, null);
-        if (userRepository.findByUsername(request.username()).isPresent()) throw BusinessException.conflict("用户名已存在");
+        if (userRepository.findByUsername(request.username()).isPresent()) throw BusinessException.conflict("Username already exists");
         Instant now = Instant.now();
         User user = User.builder().username(request.username().trim())
                 .passwordHash(passwordEncoder.encode(request.initialPassword()))
@@ -45,7 +45,7 @@ public class AdminUserController {
 
     @PutMapping("/{id}")
     public ApiResponse<UserView> update(@PathVariable String id, @Valid @RequestBody UserRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> BusinessException.notFound("用户不存在"));
+        User user = userRepository.findById(id).orElseThrow(() -> BusinessException.notFound("User not found"));
         validate(request, id);
         user.setRealName(request.realName().trim());
         user.setRole(request.role());
@@ -63,7 +63,7 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/status")
     public ApiResponse<Void> status(@PathVariable String id, @RequestBody StatusRequest request) {
-        User user = userRepository.findById(id).orElseThrow(() -> BusinessException.notFound("用户不存在"));
+        User user = userRepository.findById(id).orElseThrow(() -> BusinessException.notFound("User not found"));
         user.setStatus(request.status());
         user.setUpdatedAt(Instant.now());
         userRepository.save(user);
@@ -72,20 +72,20 @@ public class AdminUserController {
 
     private void validate(UserRequest request, String updatingId) {
         var college = organizationRepository.findById(request.collegeId())
-                .orElseThrow(() -> BusinessException.badRequest("学院不存在"));
+                .orElseThrow(() -> BusinessException.badRequest("College not found"));
         var major = organizationRepository.findById(request.majorId())
-                .orElseThrow(() -> BusinessException.badRequest("专业不存在"));
+                .orElseThrow(() -> BusinessException.badRequest("Major not found"));
         if (college.getType() != OrganizationType.COLLEGE || major.getType() != OrganizationType.MAJOR
-                || !college.getId().equals(major.getParentId())) throw BusinessException.badRequest("学院与专业不匹配");
+                || !college.getId().equals(major.getParentId())) throw BusinessException.badRequest("College and major do not match");
         if (request.role() == UserRole.STUDENT) {
-            if (request.studentNo() == null || request.studentNo().isBlank()) throw BusinessException.badRequest("学生必须填写学号");
-            User mentor = userRepository.findById(request.mentorId()).orElseThrow(() -> BusinessException.badRequest("导师不存在"));
+            if (request.studentNo() == null || request.studentNo().isBlank()) throw BusinessException.badRequest("Students must provide a student number");
+            User mentor = userRepository.findById(request.mentorId()).orElseThrow(() -> BusinessException.badRequest("Mentor not found"));
             if (mentor.getRole() != UserRole.MENTOR || !request.majorId().equals(mentor.getMajorId())) {
-                throw BusinessException.badRequest("学生导师必须是同专业导师");
+                throw BusinessException.badRequest("A student's mentor must be in the same major");
             }
         }
         userRepository.findByUsername(request.username()).ifPresent(existing -> {
-            if (!existing.getId().equals(updatingId)) throw BusinessException.conflict("用户名已存在");
+        if (!existing.getId().equals(updatingId)) throw BusinessException.conflict("Username already exists");
         });
     }
 

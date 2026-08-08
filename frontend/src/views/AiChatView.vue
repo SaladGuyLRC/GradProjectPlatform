@@ -17,7 +17,7 @@ async function send() {
     const { data } = await api.post<ApiResponse<{ conversationId:string; answer:string; citations:Citation[]; actions:Action[] }>>('/ai/chat', { message:text, conversationId:conversationId.value })
     conversationId.value = data.data.conversationId; localStorage.setItem('ph_conversation_id', conversationId.value)
     messages.value.push({ role:'assistant', content:data.data.answer, citations:data.data.citations, actions:data.data.actions }); input.value = ''
-  } catch { messages.value.push({ role:'assistant', content:'发送失败。请检查 AI 配置或稍后重试；你的输入已保留。', error:true }) }
+  } catch { messages.value.push({ role:'assistant', content:'Send failed. Check the AI configuration or try again later. Your input was kept.', error:true }) }
   finally { loading.value=false; await nextTick(); stream.value?.scrollTo({ top:stream.value.scrollHeight, behavior:'smooth' }) }
 }
 </script>

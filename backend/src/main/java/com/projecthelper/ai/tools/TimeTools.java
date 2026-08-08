@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 @Component
 public class TimeTools {
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
-    private static final Pattern CHINESE_TIME = Pattern.compile("(今天|明天|后天)?(?:上午|下午|晚上)?(\\d{1,2})点(?:(\\d{1,2})分)?");
+    private static final Pattern ENGLISH_TIME = Pattern.compile("(?i)(today|tomorrow|day after tomorrow)?\\s*(?:at\\s*)?(\\d{1,2})(?::(\\d{1,2}))?\\s*(am|pm)?");
 
     @Tool(description = "Convert a natural-language deadline to a Unix seconds timestamp, such as tomorrow at 3 PM or 2026-08-01 18:00.")
     public long parseTime(@ToolParam(description = "Natural-language time") String text) {
@@ -22,19 +22,22 @@ public class TimeTools {
             LocalDateTime exact = LocalDateTime.parse(text.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
             return exact.atZone(ZONE).toEpochSecond();
         } catch (DateTimeParseException ignored) {}
-        Matcher matcher = CHINESE_TIME.matcher(text.trim());
-        if (!matcher.find()) throw BusinessException.badRequest("无法识别时间，请提供明确日期和时间");
-        int offset = "后天".equals(matcher.group(1)) ? 2 : "明天".equals(matcher.group(1)) ? 1 : 0;
+        Matcher matcher = ENGLISH_TIME.matcher(text.trim());
+        if (!matcher.matches()) throw BusinessException.badRequest("Unable to recognise the time. Provide a clear date and time");
+        String day = matcher.group(1) == null ? "today" : matcher.group(1).toLowerCase();
+        int offset = "day after tomorrow".equals(day) ? 2 : "tomorrow".equals(day) ? 1 : 0;
         int hour = Integer.parseInt(matcher.group(2));
-        if ((text.contains("下午") || text.contains("晚上")) && hour < 12) hour += 12;
+        String meridiem = matcher.group(4);
+        if (meridiem != null && meridiem.equalsIgnoreCase("pm") && hour < 12) hour += 12;
+        if (meridiem != null && meridiem.equalsIgnoreCase("am") && hour == 12) hour = 0;
         int minute = matcher.group(3) == null ? 0 : Integer.parseInt(matcher.group(3));
-        if (hour > 23 || minute > 59) throw BusinessException.badRequest("时间格式不合法");
+        if (hour > 23 || minute > 59 || (meridiem != null && Integer.parseInt(matcher.group(2)) > 12)) throw BusinessException.badRequest("Invalid time format");
         return LocalDate.now(ZONE).plusDays(offset).atTime(hour, minute).atZone(ZONE).toEpochSecond();
     }
 
     @Tool(description = "Get the current China Standard Time and Unix seconds timestamp.")
     public String currentTime() {
         ZonedDateTime now = ZonedDateTime.now(ZONE);
-        return now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "，Unix秒=" + now.toEpochSecond();
+        return now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + " (Unix seconds=" + now.toEpochSecond() + ")";
     }
 }

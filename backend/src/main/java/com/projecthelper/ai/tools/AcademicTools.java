@@ -32,6 +32,6 @@ public class AcademicTools {
 
     private String json(Object value) {
         try { return objectMapper.writeValueAsString(value); }
-        catch (JsonProcessingException exception) { throw new IllegalStateException("序列化业务数据失败", exception); }
+        catch (JsonProcessingException exception) { throw new IllegalStateException("Failed to serialize academic data", exception); }
     }
 }

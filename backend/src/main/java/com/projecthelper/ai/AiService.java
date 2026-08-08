@@ -34,12 +34,12 @@ public class AiService {
         var actor = currentUserService.require();
         if (apiKey == null || apiKey.isBlank() || "replace-me".equals(apiKey)) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "AI_NOT_CONFIGURED",
-                    "AI服务未配置，请设置 DASHSCOPE_API_KEY");
+                    "AI is not configured. Set DASHSCOPE_API_KEY.");
         }
         String message = request.message().trim();
         String conversationId = request.conversationId() == null || request.conversationId().isBlank()
                 ? UUID.randomUUID().toString() : request.conversationId().trim();
-        if (conversationId.length() > 100) throw BusinessException.badRequest("conversationId过长");
+        if (conversationId.length() > 100) throw BusinessException.badRequest("conversationId is too long");
         List<Message> history = new ArrayList<>();
         for (var saved : conversations.load(actor.getId(), conversationId)) {
             history.add("assistant".equals(saved.role()) ? new AssistantMessage(saved.content()) : new UserMessage(saved.content()));
@@ -48,12 +48,12 @@ public class AiService {
         ChatClient chatClient = chatClientProvider.getIfAvailable();
         if (chatClient == null) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "AI_NOT_CONFIGURED",
-                    "AI服务未配置，请设置 DASHSCOPE_API_KEY");
+                    "AI is not configured. Set DASHSCOPE_API_KEY.");
         }
         AiExecutionContext.reset();
         try {
             var response = chatClient.prompt().system(SYSTEM).messages(history).user(message).call();
-            String answer = response.content() == null ? "暂时无法生成回答。" : response.content();
+            String answer = response.content() == null ? "Unable to generate an answer right now." : response.content();
             conversations.append(actor.getId(), conversationId,
                     new AiConversationStore.ConversationMessage("assistant", answer));
             return new AiChatResponse(conversationId, answer, AiExecutionContext.citations(), AiExecutionContext.actions());
@@ -61,7 +61,7 @@ public class AiService {
             throw exception;
         } catch (Exception exception) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "AI_UNAVAILABLE",
-                    "AI服务暂时不可用，请确认已配置 DASHSCOPE_API_KEY");
+                    "AI is temporarily unavailable. Check DASHSCOPE_API_KEY.");
         } finally {
             AiExecutionContext.clear();
         }

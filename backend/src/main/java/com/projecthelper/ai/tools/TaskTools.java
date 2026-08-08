@@ -23,7 +23,7 @@ public class TaskTools {
             @ToolParam(description = "Optional status: TODO, IN_PROGRESS or COMPLETED", required = false) String status) {
         TaskStatus parsed = status == null || status.isBlank() ? null : TaskStatus.valueOf(status.toUpperCase());
         try { return objectMapper.writeValueAsString(taskService.listForAi(studentName, parsed)); }
-        catch (JsonProcessingException exception) { throw new IllegalStateException("序列化任务失败", exception); }
+        catch (JsonProcessingException exception) { throw new IllegalStateException("Failed to serialize tasks", exception); }
     }
 
     @Tool(description = "Create a graduation project task only when the user explicitly asks. Do not call without a target student, title and deadline.")
@@ -39,6 +39,6 @@ public class TaskTools {
                 priority == null || priority.isBlank() ? TaskPriority.MEDIUM : TaskPriority.valueOf(priority.toUpperCase()),
                 Instant.ofEpochSecond(deadlineAt));
         AiExecutionContext.addAction(new AiExecutionContext.Action("TASK_CREATED", task.getId(), task.getTitle()));
-        return "待办创建成功，任务ID=" + task.getId() + "，标题=" + task.getTitle() + "，截止时间=" + task.getDeadlineAt();
+        return "Task created successfully. ID=" + task.getId() + ", title=" + task.getTitle() + ", deadline=" + task.getDeadlineAt();
     }
 }

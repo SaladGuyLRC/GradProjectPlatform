@@ -35,12 +35,12 @@ function openEdit(task: Task) { editingId.value = task.id; Object.assign(form, {
 async function save() {
   const payload = { ...form, studentId: isMentor.value ? form.studentId : undefined, deadlineAt: new Date(form.deadlineAt).toISOString() }
   if (editingId.value) await api.put(`/tasks/${editingId.value}`, payload); else await api.post('/tasks', payload)
-  ElMessage.success(editingId.value ? '任务已更新' : '任务已创建'); dialog.value = false; await load()
+  ElMessage.success(editingId.value ? 'Task updated' : 'Task created'); dialog.value = false; await load()
 }
-async function changeStatus(task: Task, value: string) { await api.patch(`/tasks/${task.id}/status`, { status: value }); ElMessage.success('状态已更新'); await load() }
-async function remove(task: Task) { await ElMessageBox.confirm(`确认删除“${task.title}”？`, '删除任务', { type: 'warning' }); await api.delete(`/tasks/${task.id}`); ElMessage.success('任务已删除'); await load() }
+async function changeStatus(task: Task, value: string) { await api.patch(`/tasks/${task.id}/status`, { status: value }); ElMessage.success('Status updated'); await load() }
+async function remove(task: Task) { await ElMessageBox.confirm(`Delete “${task.title}”?`, 'Delete task', { type: 'warning' }); await api.delete(`/tasks/${task.id}`); ElMessage.success('Task deleted'); await load() }
 const overdue = (task: Task) => task.status !== 'COMPLETED' && new Date(task.deadlineAt) < new Date()
-const date = (v: string) => new Date(v).toLocaleString('zh-CN')
+const date = (v: string) => new Date(v).toLocaleString('en-GB')
 </script>
 
 <template>
@@ -50,7 +50,7 @@ const date = (v: string) => new Date(v).toLocaleString('zh-CN')
       <div class="toolbar">
         <el-select v-if="isMentor" v-model="selectedStudent" placeholder="Select student" style="width: 180px" @change="load"><el-option v-for="s in students" :key="s.id" :label="s.realName" :value="s.id" /></el-select>
         <el-select v-model="status" placeholder="All statuses" clearable style="width: 160px" @change="load"><el-option v-for="s in statuses" :key="s" :label="s" :value="s" /></el-select>
-        <el-button :icon="Refresh" circle title="刷新" aria-label="刷新" @click="load" />
+        <el-button :icon="Refresh" circle title="Refresh" aria-label="Refresh" @click="load" />
       </div>
       <el-table v-loading="loading" :data="tasks" empty-text="No tasks" style="width:100%">
         <el-table-column prop="title" label="Task" min-width="190"><template #default="{ row }"><strong>{{ row.title }}</strong><div class="task-desc">{{ row.description }}</div></template></el-table-column>

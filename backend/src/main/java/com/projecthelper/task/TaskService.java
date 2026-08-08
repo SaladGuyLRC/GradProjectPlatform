@@ -28,7 +28,7 @@ public class TaskService {
         User actor = currentUserService.require();
         User student = resolveTargetStudent(actor, command.studentId());
         GraduationProject project = projectRepository.findByStudentId(student.getId())
-                .orElseThrow(() -> BusinessException.badRequest("目标学生尚未创建毕设项目"));
+                .orElseThrow(() -> BusinessException.badRequest("The target student has not created a graduation project"));
         Instant now = Instant.now();
         Task task = Task.builder().projectId(project.getId()).studentId(student.getId()).creatorId(actor.getId())
                 .title(command.title().trim()).description(command.description()).type(command.type())
@@ -44,13 +44,13 @@ public class TaskService {
         if (actor.getRole() == UserRole.STUDENT) {
             targetId = actor.getId();
         } else if (actor.getRole() == UserRole.MENTOR) {
-            if (studentName == null || studentName.isBlank()) throw BusinessException.badRequest("请说明要为哪位学生创建待办");
+            if (studentName == null || studentName.isBlank()) throw BusinessException.badRequest("Specify which student should receive the task");
             List<User> matches = userRepository.findByMentorIdAndRealName(actor.getId(), studentName.trim());
-            if (matches.isEmpty()) throw BusinessException.notFound("未找到名下学生：" + studentName);
-            if (matches.size() > 1) throw BusinessException.conflict("存在同名学生，请在页面中选择具体学生");
+            if (matches.isEmpty()) throw BusinessException.notFound("No assigned student found: " + studentName);
+            if (matches.size() > 1) throw BusinessException.conflict("Multiple students have that name; select a specific student");
             targetId = matches.getFirst().getId();
         } else {
-            throw BusinessException.forbidden("管理员不能通过AI创建学生待办");
+            throw BusinessException.forbidden("Administrators cannot create student tasks through AI");
         }
         return create(new TaskCommand(targetId, title, description, type, priority, deadlineAt));
     }
@@ -58,8 +58,8 @@ public class TaskService {
     public Task update(String id, TaskCommand command) {
         User actor = currentUserService.require();
         Task task = get(id);
-        if (!actor.getId().equals(task.getCreatorId())) throw BusinessException.forbidden("只有创建者可以编辑任务");
-        if (task.getStatus() == TaskStatus.COMPLETED) throw BusinessException.conflict("已完成任务不能编辑");
+        if (!actor.getId().equals(task.getCreatorId())) throw BusinessException.forbidden("Only the creator can edit a task");
+        if (task.getStatus() == TaskStatus.COMPLETED) throw BusinessException.conflict("Completed tasks cannot be edited");
         User student = resolveTargetStudent(actor, command.studentId());
         task.setStudentId(student.getId());
         projectRepository.findByStudentId(student.getId()).ifPresent(project -> task.setProjectId(project.getId()));
@@ -75,7 +75,7 @@ public class TaskService {
     public void delete(String id) {
         User actor = currentUserService.require();
         Task task = get(id);
-        if (!actor.getId().equals(task.getCreatorId())) throw BusinessException.forbidden("只有创建者可以删除任务");
+        if (!actor.getId().equals(task.getCreatorId())) throw BusinessException.forbidden("Only the creator can delete a task");
         taskRepository.delete(task);
     }
 
@@ -83,7 +83,7 @@ public class TaskService {
         User actor = currentUserService.require();
         Task task = get(id);
         if (actor.getRole() != UserRole.STUDENT || !actor.getId().equals(task.getStudentId())) {
-            throw BusinessException.forbidden("只有任务归属学生可以更新状态");
+            throw BusinessException.forbidden("Only the assigned student can update task status");
         }
         task.setStatus(status);
         task.setCompletedAt(status == TaskStatus.COMPLETED ? Instant.now() : null);
@@ -105,23 +105,23 @@ public class TaskService {
         String targetId = null;
         if (actor.getRole() == UserRole.MENTOR && studentName != null && !studentName.isBlank()) {
             List<User> matches = userRepository.findByMentorIdAndRealName(actor.getId(), studentName.trim());
-            if (matches.size() != 1) throw BusinessException.badRequest("请提供唯一的名下学生姓名");
+            if (matches.size() != 1) throw BusinessException.badRequest("Provide one unique assigned student name");
             targetId = matches.getFirst().getId();
         }
         return list(targetId, status, 0, 20).getContent();
     }
 
     public Task get(String id) {
-        return taskRepository.findById(id).orElseThrow(() -> BusinessException.notFound("任务不存在"));
+        return taskRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Task not found"));
     }
 
     private User resolveTargetStudent(User actor, String requestedStudentId) {
         if (actor.getRole() == UserRole.STUDENT) return actor;
-        if (actor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("只有学生和导师可以访问任务");
-        if (requestedStudentId == null || requestedStudentId.isBlank()) throw BusinessException.badRequest("请选择学生");
-        User student = userRepository.findById(requestedStudentId).orElseThrow(() -> BusinessException.notFound("学生不存在"));
+        if (actor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only students and mentors can access tasks");
+        if (requestedStudentId == null || requestedStudentId.isBlank()) throw BusinessException.badRequest("Select a student");
+        User student = userRepository.findById(requestedStudentId).orElseThrow(() -> BusinessException.notFound("Student not found"));
         if (student.getRole() != UserRole.STUDENT || !actor.getId().equals(student.getMentorId())) {
-            throw BusinessException.forbidden("该学生不属于当前导师");
+            throw BusinessException.forbidden("The student is not assigned to this mentor");
         }
         return student;
     }

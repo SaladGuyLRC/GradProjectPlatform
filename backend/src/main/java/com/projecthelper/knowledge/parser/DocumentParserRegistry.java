@@ -15,6 +15,6 @@ public class DocumentParserRegistry {
 
     public DocumentParser requireParser(String filename, String mimeType) {
         return parsers.stream().filter(parser -> parser.supports(filename, mimeType)).findFirst()
-                .orElseThrow(() -> BusinessException.badRequest("暂不支持该文档类型"));
+                .orElseThrow(() -> BusinessException.badRequest("This document type is not supported"));
     }
 }

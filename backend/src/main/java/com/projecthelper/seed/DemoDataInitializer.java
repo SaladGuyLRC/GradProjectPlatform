@@ -69,15 +69,15 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     private Organizations seedOrganizations(Instant now) {
         OrganizationUnit computing = organization(
-                "seed-org-college-computing", "计算机学院", OrganizationType.COLLEGE, null, 10, now);
+                "seed-org-college-computing", "School of Computing", OrganizationType.COLLEGE, null, 10, now);
         OrganizationUnit ai = organization(
-                "seed-org-college-ai", "人工智能学院", OrganizationType.COLLEGE, null, 20, now);
+                "seed-org-college-ai", "School of Artificial Intelligence", OrganizationType.COLLEGE, null, 20, now);
         OrganizationUnit software = organization(
-                "seed-org-major-software", "软件工程", OrganizationType.MAJOR, computing, 10, now);
+                "seed-org-major-software", "Software Engineering", OrganizationType.MAJOR, computing, 10, now);
         OrganizationUnit computerScience = organization(
-                "seed-org-major-computer-science", "计算机科学与技术", OrganizationType.MAJOR, computing, 20, now);
+                "seed-org-major-computer-science", "Computer Science", OrganizationType.MAJOR, computing, 20, now);
         OrganizationUnit artificialIntelligence = organization(
-                "seed-org-major-ai", "人工智能", OrganizationType.MAJOR, ai, 10, now);
+                "seed-org-major-ai", "Artificial Intelligence", OrganizationType.MAJOR, ai, 10, now);
         return new Organizations(computing, ai, software, computerScience, artificialIntelligence);
     }
 
@@ -102,38 +102,38 @@ public class DemoDataInitializer implements ApplicationRunner {
     }
 
     private Users seedUsers(Organizations organizations, Instant now) {
-        User admin = user("seed-user-admin", "admin", "系统管理员", UserRole.ADMIN,
+        User admin = user("seed-user-admin", "admin", "System Administrator", UserRole.ADMIN,
                 null, null, null, null, null, UserStatus.ACTIVE, now);
 
-        User mentor1 = user("seed-user-mentor1", "mentor1", "王建国", UserRole.MENTOR,
+        User mentor1 = user("seed-user-mentor1", "mentor1", "Alex Morgan", UserRole.MENTOR,
                 null, "T2026001", organizations.computing().getId(), organizations.software().getId(),
                 null, UserStatus.ACTIVE, now);
-        User mentor2 = user("seed-user-mentor2", "mentor2", "李明", UserRole.MENTOR,
+        User mentor2 = user("seed-user-mentor2", "mentor2", "Jordan Lee", UserRole.MENTOR,
                 null, "T2026002", organizations.computing().getId(), organizations.computerScience().getId(),
                 null, UserStatus.ACTIVE, now);
-        User mentor3 = user("seed-user-mentor3", "mentor3", "张敏", UserRole.MENTOR,
+        User mentor3 = user("seed-user-mentor3", "mentor3", "Taylor Smith", UserRole.MENTOR,
                 null, "T2026003", organizations.ai().getId(), organizations.artificialIntelligence().getId(),
                 null, UserStatus.ACTIVE, now);
 
-        User student1 = user("seed-user-student1", "student1", "陈宇", UserRole.STUDENT,
+        User student1 = user("seed-user-student1", "student1", "Chris Chen", UserRole.STUDENT,
                 "S2026001", null, organizations.computing().getId(), organizations.software().getId(),
                 mentor1.getId(), UserStatus.ACTIVE, now);
-        User student2 = user("seed-user-student2", "student2", "林曦", UserRole.STUDENT,
+        User student2 = user("seed-user-student2", "student2", "Jamie Lin", UserRole.STUDENT,
                 "S2026002", null, organizations.computing().getId(), organizations.software().getId(),
                 mentor1.getId(), UserStatus.ACTIVE, now);
-        User student3 = user("seed-user-student3", "student3", "赵磊", UserRole.STUDENT,
+        User student3 = user("seed-user-student3", "student3", "Morgan Zhao", UserRole.STUDENT,
                 "S2026003", null, organizations.computing().getId(), organizations.computerScience().getId(),
                 mentor2.getId(), UserStatus.ACTIVE, now);
-        User student4 = user("seed-user-student4", "student4", "孙悦", UserRole.STUDENT,
+        User student4 = user("seed-user-student4", "student4", "Casey Sun", UserRole.STUDENT,
                 "S2026004", null, organizations.computing().getId(), organizations.computerScience().getId(),
                 mentor2.getId(), UserStatus.ACTIVE, now);
-        User student5 = user("seed-user-student5", "student5", "周涵", UserRole.STUDENT,
+        User student5 = user("seed-user-student5", "student5", "Robin Zhou", UserRole.STUDENT,
                 "S2026005", null, organizations.ai().getId(), organizations.artificialIntelligence().getId(),
                 mentor3.getId(), UserStatus.ACTIVE, now);
-        User student6 = user("seed-user-student6", "student6", "吴佳", UserRole.STUDENT,
+        User student6 = user("seed-user-student6", "student6", "Avery Wu", UserRole.STUDENT,
                 "S2026006", null, organizations.ai().getId(), organizations.artificialIntelligence().getId(),
                 mentor3.getId(), UserStatus.ACTIVE, now);
-        User student7 = user("seed-user-student7", "student7", "停用测试账号", UserRole.STUDENT,
+        User student7 = user("seed-user-student7", "student7", "Disabled Test Account", UserRole.STUDENT,
                 "S2026999", null, organizations.ai().getId(), organizations.artificialIntelligence().getId(),
                 mentor3.getId(), UserStatus.DISABLED, now);
 
@@ -167,36 +167,36 @@ public class DemoDataInitializer implements ApplicationRunner {
     private Projects seedProjects(Users users, LocalDate today, Instant now) {
         GraduationProject project1 = project(
                 "seed-project-student1", users.student1(),
-                "ProjectHelper 毕业设计协作与 AI 助手系统",
-                "面向学生和导师的毕业设计过程协作系统，支持周进展、待办、公共知识库和 AI 助手。",
+                "ProjectHelper Graduation Project Collaboration and AI Assistant",
+                "A graduation project collaboration system for students and mentors with weekly reports, tasks, a public knowledge base and an AI assistant.",
                 List.of("Java 21", "Spring Boot", "MongoDB", "Redis Stack", "Vue 3"),
-                "https://github.com/SaladGuyLRC/ProjectHelper1",
+                "https://github.com/SaladGuyLRC/GradProjectPlatform",
                 ProjectStatus.IN_PROGRESS, today.minusDays(75), today.plusDays(45), now);
         GraduationProject project2 = project(
                 "seed-project-student2", users.student2(),
-                "校园会议与实验室预约系统",
-                "为学生和教师提供会议室、实验室预约及冲突检测。",
+                "Campus Room and Lab Booking System",
+                "Provides room and laboratory booking with conflict detection for students and staff.",
                 List.of("Java", "Spring Boot", "MongoDB", "Vue 3"),
                 "https://example.com/demo/lab-booking",
                 ProjectStatus.IN_PROGRESS, today.minusDays(60), today.plusDays(55), now);
         GraduationProject project3 = project(
                 "seed-project-student3", users.student3(),
-                "在线实验教学管理平台",
-                "管理实验课程、实验报告和教师反馈。",
+                "Online Practical Teaching Platform",
+                "Manages practical courses, lab reports and instructor feedback.",
                 List.of("Java", "Spring Boot", "Redis", "Vue 3"),
                 "https://example.com/demo/experiment-platform",
                 ProjectStatus.PAUSED, today.minusDays(90), today.plusDays(35), now);
         GraduationProject project4 = project(
                 "seed-project-student4", users.student4(),
-                "校园二手交易平台",
-                "支持校园二手物品发布、搜索和交易状态管理。",
+                "Campus Marketplace",
+                "Supports listing, searching and managing the status of second-hand campus goods.",
                 List.of("Java", "MongoDB", "Vue 3"),
                 "https://example.com/demo/campus-market",
                 ProjectStatus.COMPLETED, today.minusDays(150), today.minusDays(10), now);
         GraduationProject project6 = project(
                 "seed-project-student6", users.student6(),
-                "毕业论文智能排版助手",
-                "根据学校论文规范检查章节、引用和排版问题。",
+                "Smart Thesis Formatting Assistant",
+                "Checks chapters, citations and formatting against university thesis guidelines.",
                 List.of("Java", "Spring AI", "MongoDB", "Vue 3"),
                 "https://example.com/demo/thesis-assistant",
                 ProjectStatus.IN_PROGRESS, today.minusDays(45), today.plusDays(70), now);
@@ -228,46 +228,46 @@ public class DemoDataInitializer implements ApplicationRunner {
     private void seedWeeklyReports(Users users, Projects projects, LocalDate currentMonday, Instant now) {
         weeklyReport("seed-report-student1-current", users.student1(), projects.project1(),
                 currentMonday, WeeklyReportStatus.DRAFT, 45,
-                "完成登录、组织管理、项目、周进展、待办和学生 Dashboard 的后端接口。",
-                "Redis Stack 向量检索和模型工具调用仍需真实环境验证。",
-                "完成 AI 对话闭环并开始 Vue 前端基础框架。", null, null, now);
+                "Completed backend APIs for login, organization management, projects, weekly reports, tasks and the student dashboard.",
+                "Redis Stack vector search and model tool calls still need validation in a real environment.",
+                "Complete the AI conversation loop and start the Vue frontend foundation.", null, null, now);
         weeklyReport("seed-report-student1-previous", users.student1(), projects.project1(),
                 currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 38,
-                "完成 JWT 认证、学院专业管理和成员树。",
-                "对象级权限测试场景需要进一步补充。",
-                "实现毕设项目、周进展和导师评阅。",
-                now.minus(Duration.ofDays(7)), "进度符合预期，下一阶段优先验证关键权限边界。", now);
+                "Completed JWT authentication, college and major management, and the members tree.",
+                "More object-level permission test scenarios are needed.",
+                "Implement graduation projects, weekly reports and mentor reviews.",
+                now.minus(Duration.ofDays(7)), "Progress is on track. Prioritise validating critical permission boundaries next.", now);
 
         weeklyReport("seed-report-student2-current", users.student2(), projects.project2(),
                 currentMonday, WeeklyReportStatus.SUBMITTED, 60,
-                "完成预约冲突检测和预约记录分页查询。",
-                "高并发场景下的时间段冲突校验还需测试。",
-                "补充接口测试并完成第一版预约页面。",
+                "Completed booking conflict detection and paginated booking queries.",
+                "Time-slot conflict validation still needs testing under high concurrency.",
+                "Add API tests and complete the first booking page.",
                 now.minus(Duration.ofHours(5)), null, now);
         weeklyReport("seed-report-student2-previous", users.student2(), projects.project2(),
                 currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 52,
-                "完成实验室和会议室基础数据模型。",
-                "预约规则需要与导师进一步确认。",
-                "实现预约创建、取消和状态管理。",
-                now.minus(Duration.ofDays(7)), "数据模型清晰，注意统一时间与时区处理。", now);
+                "Completed the base data model for laboratories and rooms.",
+                "Booking rules need further confirmation with the mentor.",
+                "Implement booking creation, cancellation and status management.",
+                now.minus(Duration.ofDays(7)), "The data model is clear. Keep time and timezone handling consistent.", now);
 
         weeklyReport("seed-report-student3-current", users.student3(), projects.project3(),
                 currentMonday, WeeklyReportStatus.SUBMITTED, 40,
-                "完成实验课程和学生分组设计。",
-                "项目暂停期间需要重新调整里程碑。",
-                "确认缩减范围并恢复核心接口开发。",
+                "Completed practical course and student group design.",
+                "Milestones need adjustment while the project is paused.",
+                "Confirm the reduced scope and resume core API development.",
                 now.minus(Duration.ofHours(8)), null, now);
         weeklyReport("seed-report-student4-previous", users.student4(), projects.project4(),
                 currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 100,
-                "完成最终测试、演示数据和部署文档。",
-                "无阻塞问题。",
-                "整理答辩材料和项目总结。",
-                now.minus(Duration.ofDays(7)), "项目已达到预期目标，可以进入答辩准备阶段。", now);
+                "Completed final tests, demo data and deployment documentation.",
+                "No blocking issues.",
+                "Prepare defense materials and the project summary.",
+                now.minus(Duration.ofDays(7)), "The project has reached its target and can move into defense preparation.", now);
         weeklyReport("seed-report-student6-current", users.student6(), projects.project6(),
                 currentMonday, WeeklyReportStatus.DRAFT, 25,
-                "完成论文模板解析方案和章节结构模型。",
-                "不同 PDF 的文本提取质量差异较大。",
-                "实现格式规则检查和结果展示。",
+                "Completed the thesis template parsing approach and chapter structure model.",
+                "Text extraction quality varies significantly between PDFs.",
+                "Implement formatting rule checks and result presentation.",
                 null, null, now);
     }
 
@@ -313,52 +313,52 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     private void seedTasks(Users users, Projects projects, Instant now) {
         task("seed-task-student1-overdue", users.student1(), users.mentor1(), projects.project1(),
-                "补充前期设计文档", "整理需求、架构、数据模型和页面原型。",
+                "Complete initial design documentation", "Organise requirements, architecture, data model and page prototypes.",
                 TaskType.DOCUMENT, TaskPriority.HIGH, TaskStatus.TODO,
                 now.minus(Duration.ofDays(2)), null, now);
         task("seed-task-student1-code", users.student1(), users.student1(), projects.project1(),
-                "完成 Redis 集成测试", "验证 RediSearch 索引创建和向量查询响应。",
+                "Complete Redis integration tests", "Validate RediSearch index creation and vector query responses.",
                 TaskType.CODE, TaskPriority.HIGH, TaskStatus.IN_PROGRESS,
                 now.plus(Duration.ofDays(1)), null, now);
         task("seed-task-student1-meeting", users.student1(), users.mentor1(), projects.project1(),
-                "参加导师进度会议", "演示当前接口并确认前端实现顺序。",
+                "Attend the mentor progress meeting", "Demonstrate current APIs and confirm the frontend implementation order.",
                 TaskType.MEETING, TaskPriority.MEDIUM, TaskStatus.TODO,
                 now.plus(Duration.ofDays(2)), null, now);
         task("seed-task-student1-progress", users.student1(), users.student1(), projects.project1(),
-                "完成前端第一版", "完成登录、学生 Dashboard 和周进展页面。",
+                "Complete the first frontend release", "Complete the login, student dashboard and weekly reports pages.",
                 TaskType.PROGRESS, TaskPriority.MEDIUM, TaskStatus.TODO,
                 now.plus(Duration.ofDays(5)), null, now);
         task("seed-task-student1-experiment", users.student1(), users.mentor1(), projects.project1(),
-                "验证 Qwen 工具调用", "测试查询项目、周报、待办和创建待办。",
+                "Validate Qwen tool calls", "Test project, weekly report and task queries and task creation.",
                 TaskType.EXPERIMENT, TaskPriority.LOW, TaskStatus.IN_PROGRESS,
                 now.plus(Duration.ofDays(6)), null, now);
         task("seed-task-student1-completed", users.student1(), users.student1(), projects.project1(),
-                "初始化 Git 仓库", "建立 main、develop 和 feature 分支。",
+                "Initialise the Git repository", "Create the main, develop and feature branches.",
                 TaskType.OTHER, TaskPriority.LOW, TaskStatus.COMPLETED,
                 now.minus(Duration.ofDays(7)), now.minus(Duration.ofDays(6)), now);
 
         task("seed-task-student2-code", users.student2(), users.student2(), projects.project2(),
-                "完成预约页面接口联调", "联调预约创建和冲突提示。",
+                "Integrate the booking page APIs", "Integrate booking creation and conflict messages.",
                 TaskType.CODE, TaskPriority.HIGH, TaskStatus.TODO,
                 now.plus(Duration.ofDays(4)), null, now);
         task("seed-task-student2-meeting", users.student2(), users.mentor1(), projects.project2(),
-                "确认预约业务范围", "与导师确认首期不做实时通知。",
+                "Confirm the booking scope", "Confirm with the mentor that real-time notifications are out of scope for the first release.",
                 TaskType.MEETING, TaskPriority.MEDIUM, TaskStatus.COMPLETED,
                 now.minus(Duration.ofDays(10)), now.minus(Duration.ofDays(9)), now);
         task("seed-task-student3-document", users.student3(), users.mentor2(), projects.project3(),
-                "补充实验平台数据模型", "整理课程、实验、分组和报告关系。",
+                "Complete the practical platform data model", "Organise the relationships between courses, labs, groups and reports.",
                 TaskType.DOCUMENT, TaskPriority.HIGH, TaskStatus.IN_PROGRESS,
                 now.plus(Duration.ofDays(2)), null, now);
         task("seed-task-student4-progress", users.student4(), users.student4(), projects.project4(),
-                "整理项目验收材料", "归档测试结果、部署说明和演示截图。",
+                "Prepare project acceptance materials", "Archive test results, deployment notes and demo screenshots.",
                 TaskType.PROGRESS, TaskPriority.LOW, TaskStatus.COMPLETED,
                 now.minus(Duration.ofDays(20)), now.minus(Duration.ofDays(18)), now);
         task("seed-task-student6-experiment", users.student6(), users.mentor3(), projects.project6(),
-                "验证论文模板解析", "选择三份不同格式的 PDF 比较解析结果。",
+                "Validate thesis template parsing", "Compare parsing results from three differently formatted PDFs.",
                 TaskType.EXPERIMENT, TaskPriority.MEDIUM, TaskStatus.TODO,
                 now.plus(Duration.ofDays(6)), null, now);
         task("seed-task-student6-other", users.student6(), users.student6(), projects.project6(),
-                "整理引用格式示例", "准备 GB/T 7714 引用格式测试样例。",
+                "Prepare citation format examples", "Prepare test examples for the GB/T 7714 citation format.",
                 TaskType.OTHER, TaskPriority.LOW, TaskStatus.TODO,
                 now.plus(Duration.ofDays(8)), null, now);
     }

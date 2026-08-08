@@ -36,7 +36,7 @@ public class AiConversationStore {
             redis.opsForList().trim(redisKey, -MAX_MESSAGES, -1);
             redis.expire(redisKey, TTL);
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("保存AI会话失败", exception);
+            throw new IllegalStateException("Failed to save AI conversation", exception);
         }
     }
 

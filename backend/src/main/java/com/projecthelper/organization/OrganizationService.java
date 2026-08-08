@@ -43,9 +43,9 @@ public class OrganizationService {
     }
 
     public void delete(String id) {
-        if (organizationRepository.existsByParentId(id)) throw BusinessException.conflict("请先删除下级专业");
+        if (organizationRepository.existsByParentId(id)) throw BusinessException.conflict("Delete child majors first");
         boolean used = userRepository.findAll().stream().anyMatch(u -> id.equals(u.getCollegeId()) || id.equals(u.getMajorId()));
-        if (used) throw BusinessException.conflict("组织下仍有成员，不能删除");
+        if (used) throw BusinessException.conflict("This organization still has members and cannot be deleted");
         organizationRepository.delete(get(id));
     }
 
@@ -72,18 +72,18 @@ public class OrganizationService {
     }
 
     public OrganizationUnit get(String id) {
-        return organizationRepository.findById(id).orElseThrow(() -> BusinessException.notFound("组织不存在"));
+        return organizationRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Organization not found"));
     }
 
     private void validateParent(OrganizationType type, String parentId, String selfId) {
         if (type == OrganizationType.COLLEGE) {
-            if (parentId != null && !parentId.isBlank()) throw BusinessException.badRequest("学院不能有上级组织");
+            if (parentId != null && !parentId.isBlank()) throw BusinessException.badRequest("A college cannot have a parent organization");
             return;
         }
         if (parentId == null || parentId.isBlank() || parentId.equals(selfId)) {
-            throw BusinessException.badRequest("专业必须属于一个学院");
+            throw BusinessException.badRequest("A major must belong to a college");
         }
-        if (get(parentId).getType() != OrganizationType.COLLEGE) throw BusinessException.badRequest("专业上级必须是学院");
+        if (get(parentId).getType() != OrganizationType.COLLEGE) throw BusinessException.badRequest("A major parent must be a college");
     }
 
     private void applyHierarchy(OrganizationUnit unit) {

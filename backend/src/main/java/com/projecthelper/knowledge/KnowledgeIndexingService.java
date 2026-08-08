@@ -68,7 +68,7 @@ public class KnowledgeIndexingService {
     }
 
     private String trim(String message) {
-        if (message == null) return "未知错误";
+        if (message == null) return "Unknown error";
         return message.length() <= 500 ? message : message.substring(0, 500);
     }
 }

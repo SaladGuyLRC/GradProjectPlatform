@@ -20,7 +20,7 @@ public class PdfDocumentParser implements DocumentParser {
     public ParsedDocument parse(Path file) throws IOException {
         try (PDDocument document = Loader.loadPDF(file.toFile())) {
             String text = new PDFTextStripper().getText(document).replace("\u0000", "").trim();
-            if (text.isBlank()) throw new IOException("PDF中没有可提取文本");
+            if (text.isBlank()) throw new IOException("The PDF contains no extractable text");
             return new ParsedDocument(text, document.getNumberOfPages());
         }
     }

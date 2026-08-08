@@ -18,9 +18,9 @@ public class CurrentUserService {
     public User require() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "请先登录");
+            throw new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Please log in first");
         }
         return userRepository.findById(authentication.getName())
-                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "登录用户不存在"));
+                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "The authenticated user no longer exists"));
     }
 }

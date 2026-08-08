@@ -20,7 +20,7 @@ public class KnowledgeTools {
         for (int i = 0; i < hits.size(); i++) {
             var hit = hits.get(i);
             AiExecutionContext.addCitation(new AiExecutionContext.Citation(hit.documentId(), hit.title(), hit.chunkIndex()));
-            result.append("【来源").append(i + 1).append("：").append(hit.title()).append("】\n")
+            result.append("[Source ").append(i + 1).append(": ").append(hit.title()).append("]\n")
                     .append(hit.content()).append("\n\n");
         }
         return result.toString();

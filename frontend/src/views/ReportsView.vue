@@ -21,10 +21,10 @@ async function load() {
 }
 function openCreate() { editingId.value = null; Object.assign(form, { weekStart: '', completedWork: '', currentProblems: '', nextWeekPlan: '', progressPercentage: 0 }); dialog.value = true }
 function openEdit(r: Report) { editingId.value = r.id; Object.assign(form, { weekStart: r.weekStart, completedWork: r.completedWork, currentProblems: r.currentProblems || '', nextWeekPlan: r.nextWeekPlan, progressPercentage: r.progressPercentage }); dialog.value = true }
-async function save() { if (editingId.value) await api.put(`/weekly-reports/${editingId.value}`, form); else await api.post('/weekly-reports', form); ElMessage.success(editingId.value ? '草稿已更新' : '草稿已创建'); dialog.value = false; await load() }
-async function submit(r: Report) { await ElMessageBox.confirm('提交后学生内容将不能再修改，确认提交？', '提交周进展', { type: 'warning' }); await api.post(`/weekly-reports/${r.id}/submit`); ElMessage.success('周进展已提交'); await load() }
+async function save() { if (editingId.value) await api.put(`/weekly-reports/${editingId.value}`, form); else await api.post('/weekly-reports', form); ElMessage.success(editingId.value ? 'Draft updated' : 'Draft created'); dialog.value = false; await load() }
+async function submit(r: Report) { await ElMessageBox.confirm('Submitted reports cannot be edited. Continue?', 'Submit weekly report', { type: 'warning' }); await api.post(`/weekly-reports/${r.id}/submit`); ElMessage.success('Weekly report submitted'); await load() }
 function openDetail(r: Report) { detail.value = r; reviewText.value = r.review?.content || '' }
-async function review() { if (!detail.value) return; await api.put(`/mentor/weekly-reports/${detail.value.id}/review`, { content: reviewText.value }); ElMessage.success('评阅已保存'); detail.value = null; await load() }
+async function review() { if (!detail.value) return; await api.put(`/mentor/weekly-reports/${detail.value.id}/review`, { content: reviewText.value }); ElMessage.success('Review saved'); detail.value = null; await load() }
 const tagType = (s: string) => s === 'DRAFT' ? 'info' : s === 'SUBMITTED' ? 'warning' : 'success'
 </script>
 

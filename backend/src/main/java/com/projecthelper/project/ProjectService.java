@@ -24,7 +24,7 @@ public class ProjectService {
 
     public GraduationProject create(ProjectCommand command) {
         User student = requireStudent();
-        if (projectRepository.findByStudentId(student.getId()).isPresent()) throw BusinessException.conflict("每名学生只能创建一个毕设项目");
+        if (projectRepository.findByStudentId(student.getId()).isPresent()) throw BusinessException.conflict("Each student can create only one graduation project");
         validate(command);
         Instant now = Instant.now();
         return projectRepository.save(GraduationProject.builder().studentId(student.getId()).mentorId(student.getMentorId())
@@ -36,7 +36,7 @@ public class ProjectService {
     public GraduationProject update(ProjectCommand command) {
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
-                .orElseThrow(() -> BusinessException.notFound("请先创建毕设项目"));
+                .orElseThrow(() -> BusinessException.notFound("Create a graduation project first"));
         validate(command);
         project.setTitle(command.title().trim());
         project.setSummary(command.summary());
@@ -51,7 +51,7 @@ public class ProjectService {
 
     public GraduationProject mentorView(String studentId) {
         User mentor = currentUserService.require();
-        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("仅导师可查看学生项目");
+        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can view student projects");
         User student = requireSupervisedStudent(mentor, studentId);
         return projectRepository.findByStudentId(student.getId()).orElse(null);
     }
@@ -63,24 +63,24 @@ public class ProjectService {
     }
 
     public User requireSupervisedStudent(User mentor, String studentId) {
-        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("当前用户不是导师");
-        User student = userRepository.findById(studentId).orElseThrow(() -> BusinessException.notFound("学生不存在"));
+        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("The current user is not a mentor");
+        User student = userRepository.findById(studentId).orElseThrow(() -> BusinessException.notFound("Student not found"));
         if (student.getRole() != UserRole.STUDENT || !mentor.getId().equals(student.getMentorId())) {
-            throw BusinessException.forbidden("该学生不属于当前导师");
+            throw BusinessException.forbidden("The student is not assigned to this mentor");
         }
         return student;
     }
 
     private User requireStudent() {
         User user = currentUserService.require();
-        if (user.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("仅学生可维护自己的毕设项目");
+        if (user.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("Only students can maintain their own graduation project");
         return user;
     }
 
     private void validate(ProjectCommand command) {
         if (command.startDate() != null && command.plannedEndDate() != null
                 && command.plannedEndDate().isBefore(command.startDate())) {
-            throw BusinessException.badRequest("计划完成日期不能早于开始日期");
+            throw BusinessException.badRequest("The planned end date cannot be before the start date");
         }
     }
 

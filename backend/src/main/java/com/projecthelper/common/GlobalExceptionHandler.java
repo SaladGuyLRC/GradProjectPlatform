@@ -28,13 +28,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> denied(AccessDeniedException exception) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error("FORBIDDEN", "没有访问权限"));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error("FORBIDDEN", "Access denied"));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> fallback(Exception exception) {
         log.error("Unhandled request error", exception);
-        return ResponseEntity.internalServerError().body(error("INTERNAL_ERROR", "系统暂时不可用"));
+        return ResponseEntity.internalServerError().body(error("INTERNAL_ERROR", "The service is temporarily unavailable"));
     }
 
     private ApiResponse<Void> error(String code, String message) {

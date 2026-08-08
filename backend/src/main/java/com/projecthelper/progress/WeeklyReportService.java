@@ -28,10 +28,10 @@ public class WeeklyReportService {
     public WeeklyReport create(ReportCommand command) {
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
-                .orElseThrow(() -> BusinessException.badRequest("请先创建毕设项目"));
+                .orElseThrow(() -> BusinessException.badRequest("Create a graduation project first"));
         validate(command);
         if (reportRepository.findByStudentIdAndWeekStart(student.getId(), command.weekStart()).isPresent()) {
-            throw BusinessException.conflict("本周进展已存在");
+            throw BusinessException.conflict("A report for this week already exists");
         }
         Instant now = Instant.now();
         return reportRepository.save(WeeklyReport.builder().studentId(student.getId()).mentorId(student.getMentorId())
@@ -44,11 +44,11 @@ public class WeeklyReportService {
     public WeeklyReport update(String id, ReportCommand command) {
         User student = requireStudent();
         WeeklyReport report = ownedReport(id, student.getId());
-        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("进展提交后不能修改");
+        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("Submitted reports cannot be edited");
         validate(command);
         if (!report.getWeekStart().equals(command.weekStart())
                 && reportRepository.findByStudentIdAndWeekStart(student.getId(), command.weekStart()).isPresent()) {
-            throw BusinessException.conflict("目标周进展已存在");
+            throw BusinessException.conflict("A report for the target week already exists");
         }
         report.setWeekStart(command.weekStart());
         report.setWeekEnd(command.weekStart().plusDays(6));
@@ -63,14 +63,14 @@ public class WeeklyReportService {
     public void delete(String id) {
         User student = requireStudent();
         WeeklyReport report = ownedReport(id, student.getId());
-        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("仅草稿可以删除");
+        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("Only drafts can be deleted");
         reportRepository.delete(report);
     }
 
     public WeeklyReport submit(String id) {
         User student = requireStudent();
         WeeklyReport report = ownedReport(id, student.getId());
-        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("进展已经提交");
+        if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("The report has already been submitted");
         report.setStatus(WeeklyReportStatus.SUBMITTED);
         report.setSubmittedAt(Instant.now());
         report.setUpdatedAt(Instant.now());
@@ -79,10 +79,10 @@ public class WeeklyReportService {
 
     public WeeklyReport review(String id, String content) {
         User mentor = currentUserService.require();
-        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("仅导师可以评阅周进展");
-        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("周进展不存在"));
-        if (!mentor.getId().equals(report.getMentorId())) throw BusinessException.forbidden("不能评阅其他导师学生的进展");
-        if (report.getStatus() == WeeklyReportStatus.DRAFT) throw BusinessException.conflict("草稿不能评阅");
+        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can review weekly reports");
+        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Weekly report not found"));
+        if (!mentor.getId().equals(report.getMentorId())) throw BusinessException.forbidden("You cannot review a report belonging to another mentor's student");
+        if (report.getStatus() == WeeklyReportStatus.DRAFT) throw BusinessException.conflict("Drafts cannot be reviewed");
         Instant now = Instant.now();
         Instant firstReviewedAt = report.getReview() == null ? now : report.getReview().getReviewedAt();
         report.setReview(WeeklyReport.Review.builder().mentorId(mentor.getId()).content(content.trim())
@@ -99,18 +99,18 @@ public class WeeklyReportService {
 
     public Page<WeeklyReport> mentorReports(WeeklyReportStatus status, int page, int size) {
         User mentor = currentUserService.require();
-        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("仅导师可访问");
+        if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can access this report");
         return status == null ? reportRepository.findByMentorId(mentor.getId(), pageable(page, size))
                 : reportRepository.findByMentorIdAndStatus(mentor.getId(), status, pageable(page, size));
     }
 
     public WeeklyReport get(String id) {
         User actor = currentUserService.require();
-        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("周进展不存在"));
+        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Weekly report not found"));
         boolean allowed = actor.getRole() == UserRole.ADMIN
                 || actor.getId().equals(report.getStudentId())
                 || actor.getId().equals(report.getMentorId());
-        if (!allowed) throw BusinessException.forbidden("无权查看该周进展");
+        if (!allowed) throw BusinessException.forbidden("You are not allowed to view this weekly report");
         return report;
     }
 
@@ -118,10 +118,10 @@ public class WeeklyReportService {
         User actor = currentUserService.require();
         String target = actor.getRole() == UserRole.STUDENT ? actor.getId() : studentId;
         if (actor.getRole() == UserRole.MENTOR) {
-            User student = userRepository.findById(target).orElseThrow(() -> BusinessException.notFound("学生不存在"));
-            if (!actor.getId().equals(student.getMentorId())) throw BusinessException.forbidden("该学生不属于当前导师");
+            User student = userRepository.findById(target).orElseThrow(() -> BusinessException.notFound("Student not found"));
+            if (!actor.getId().equals(student.getMentorId())) throw BusinessException.forbidden("The student is not assigned to this mentor");
         }
-        if (actor.getRole() == UserRole.ADMIN) throw BusinessException.forbidden("管理员AI不读取学生进展");
+        if (actor.getRole() == UserRole.ADMIN) throw BusinessException.forbidden("Administrators cannot use AI to read student reports");
         return reportRepository.findByStudentId(target, PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "weekStart"))).getContent();
     }
 
@@ -132,21 +132,21 @@ public class WeeklyReportService {
     }
 
     private WeeklyReport ownedReport(String id, String studentId) {
-        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("周进展不存在"));
-        if (!studentId.equals(report.getStudentId())) throw BusinessException.forbidden("无权操作该周进展");
+        WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Weekly report not found"));
+        if (!studentId.equals(report.getStudentId())) throw BusinessException.forbidden("You are not allowed to modify this weekly report");
         return report;
     }
 
     private User requireStudent() {
         User user = currentUserService.require();
-        if (user.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("仅学生可提交周进展");
+        if (user.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("Only students can submit weekly reports");
         return user;
     }
 
     private void validate(ReportCommand command) {
-        if (command.weekStart().getDayOfWeek() != DayOfWeek.MONDAY) throw BusinessException.badRequest("weekStart 必须是星期一");
+        if (command.weekStart().getDayOfWeek() != DayOfWeek.MONDAY) throw BusinessException.badRequest("weekStart must be a Monday");
         if (command.progressPercentage() < 0 || command.progressPercentage() > 100) {
-            throw BusinessException.badRequest("完成度必须在0到100之间");
+            throw BusinessException.badRequest("Progress must be between 0 and 100");
         }
     }
 

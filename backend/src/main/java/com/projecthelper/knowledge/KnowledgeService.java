@@ -30,24 +30,24 @@ public class KnowledgeService {
     private final CurrentUserService currentUserService;
 
     public KnowledgeDocument upload(String title, String description, MultipartFile file) {
-        if (file.isEmpty()) throw BusinessException.badRequest("PDF文件不能为空");
-        if (file.getSize() > 20L * 1024 * 1024) throw BusinessException.badRequest("PDF不能超过20MB");
+        if (file.isEmpty()) throw BusinessException.badRequest("The PDF file cannot be empty");
+        if (file.getSize() > 20L * 1024 * 1024) throw BusinessException.badRequest("The PDF cannot exceed 20 MB");
         String original = file.getOriginalFilename() == null ? "document.pdf" : file.getOriginalFilename();
         parserRegistry.requireParser(original, file.getContentType());
         String sha = sha256(file);
-        if (documentRepository.findBySha256(sha).isPresent()) throw BusinessException.conflict("该PDF已经上传");
+        if (documentRepository.findBySha256(sha).isPresent()) throw BusinessException.conflict("This PDF has already been uploaded");
         String id = UUID.randomUUID().toString();
         String storedFilename = id + ".pdf";
         Path root = Path.of(properties.getStoragePath()).toAbsolutePath().normalize();
         Path target = root.resolve(storedFilename).normalize();
-        if (!target.startsWith(root)) throw BusinessException.badRequest("文件路径非法");
+        if (!target.startsWith(root)) throw BusinessException.badRequest("Invalid file path");
         try {
             Files.createDirectories(root);
             try (InputStream input = file.getInputStream()) {
                 Files.copy(input, target, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (Exception exception) {
-            throw new IllegalStateException("保存PDF失败", exception);
+            throw new IllegalStateException("Failed to save PDF", exception);
         }
         Instant now = Instant.now();
         KnowledgeDocument document = KnowledgeDocument.builder().id(id).title(title.trim()).description(description)
@@ -65,24 +65,24 @@ public class KnowledgeService {
     }
 
     public KnowledgeDocument get(String id) {
-        return documentRepository.findById(id).orElseThrow(() -> BusinessException.notFound("知识文档不存在"));
+        return documentRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Knowledge document not found"));
     }
 
     public Resource download(String id) {
         try {
             Resource resource = new UrlResource(Path.of(get(id).getStoredPath()).toUri());
-            if (!resource.exists()) throw BusinessException.notFound("原始PDF不存在");
+            if (!resource.exists()) throw BusinessException.notFound("The original PDF does not exist");
             return resource;
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception exception) {
-            throw new IllegalStateException("读取PDF失败", exception);
+            throw new IllegalStateException("Failed to read PDF", exception);
         }
     }
 
     public KnowledgeDocument reindex(String id) {
         KnowledgeDocument document = get(id);
-        if (document.getStatus() == KnowledgeStatus.PROCESSING) throw BusinessException.conflict("文档正在处理");
+        if (document.getStatus() == KnowledgeStatus.PROCESSING) throw BusinessException.conflict("The document is already being processed");
         document.setStatus(KnowledgeStatus.UPLOADED);
         document.setFailureReason(null);
         document.setUpdatedAt(Instant.now());
@@ -93,18 +93,18 @@ public class KnowledgeService {
 
     public void delete(String id) {
         KnowledgeDocument document = get(id);
-        if (document.getStatus() == KnowledgeStatus.PROCESSING) throw BusinessException.conflict("文档正在处理，暂不能删除");
+        if (document.getStatus() == KnowledgeStatus.PROCESSING) throw BusinessException.conflict("The document is being processed and cannot be deleted yet");
         vectorStore.deleteDocument(id);
         try {
             Files.deleteIfExists(Path.of(document.getStoredPath()));
         } catch (Exception exception) {
-            throw new IllegalStateException("删除原始PDF失败", exception);
+            throw new IllegalStateException("Failed to delete original PDF", exception);
         }
         documentRepository.delete(document);
     }
 
     public List<RedisVectorStore.SearchHit> search(String question) {
-        if (question == null || question.isBlank()) throw BusinessException.badRequest("问题不能为空");
+        if (question == null || question.isBlank()) throw BusinessException.badRequest("The question cannot be empty");
         return vectorStore.search(question.trim(), 3);
     }
 
@@ -116,7 +116,7 @@ public class KnowledgeService {
             while ((length = input.read(buffer)) > 0) digest.update(buffer, 0, length);
             return HexFormat.of().formatHex(digest.digest());
         } catch (Exception exception) {
-            throw new IllegalStateException("计算文件摘要失败", exception);
+            throw new IllegalStateException("Failed to calculate file digest", exception);
         }
     }
 }

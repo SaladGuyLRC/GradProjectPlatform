@@ -24,7 +24,7 @@ onMounted(async () => {
   try { data.value = (await api.get<ApiResponse<Dashboard>>('/dashboard/student')).data.data }
   finally { loading.value = false }
 })
-const formatDate = (value: string) => new Date(value).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+const formatDate = (value: string) => new Date(value).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>

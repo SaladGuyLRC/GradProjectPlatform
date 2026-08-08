@@ -35,7 +35,7 @@ public class StudentDashboardService {
 
     public StudentDashboard dashboard() {
         User student = currentUserService.require();
-        if (student.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("学生Dashboard仅对学生开放");
+        if (student.getRole() != UserRole.STUDENT) throw BusinessException.forbidden("The student dashboard is available only to students");
         User mentor = userRepository.findById(student.getMentorId()).orElse(null);
         String collegeName = organizationRepository.findById(student.getCollegeId()).map(unit -> unit.getName()).orElse("");
         String majorName = organizationRepository.findById(student.getMajorId()).map(unit -> unit.getName()).orElse("");

@@ -29,15 +29,15 @@ public class EmbeddingClient {
                 .retrieve().body(String.class);
         try {
             JsonNode vector = objectMapper.readTree(response).path("data").path(0).path("embedding");
-            if (!vector.isArray()) throw new IllegalStateException("Embedding响应缺少向量");
+            if (!vector.isArray()) throw new IllegalStateException("Embedding response does not contain a vector");
             float[] values = new float[vector.size()];
             for (int i = 0; i < vector.size(); i++) values[i] = (float) vector.get(i).asDouble();
             if (values.length != properties.getEmbeddingDimension()) {
-                throw new IllegalStateException("Embedding维度不匹配，期望" + properties.getEmbeddingDimension() + "，实际" + values.length);
+                throw new IllegalStateException("Embedding dimension mismatch: expected " + properties.getEmbeddingDimension() + ", actual " + values.length);
             }
             return values;
         } catch (Exception exception) {
-            throw new IllegalStateException("无法解析Embedding响应", exception);
+            throw new IllegalStateException("Unable to parse embedding response", exception);
         }
     }
 }

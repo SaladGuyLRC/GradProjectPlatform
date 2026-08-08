@@ -142,7 +142,7 @@ class DemoDataInitializerTest {
     void createsCompleteIdempotentDatasetAndPreservesExistingBusinessRecords() throws Exception {
         OrganizationUnit existingCollege = OrganizationUnit.builder()
                 .id("existing-computing")
-                .name("计算机学院")
+                .name("School of Computing")
                 .type(OrganizationType.COLLEGE)
                 .path(":")
                 .level(1)
@@ -156,7 +156,7 @@ class DemoDataInitializerTest {
                 .id("existing-admin")
                 .username("admin")
                 .passwordHash("custom-password")
-                .realName("自定义管理员")
+                .realName("Custom Administrator")
                 .role(UserRole.ADMIN)
                 .status(UserStatus.ACTIVE)
                 .createdAt(NOW.minusSeconds(3600))
@@ -177,7 +177,7 @@ class DemoDataInitializerTest {
         assertEquals("custom-password", users.get("existing-admin").getPasswordHash());
         assertTrue(organizations.values().stream()
                 .filter(unit -> unit.getType() == OrganizationType.MAJOR)
-                .filter(unit -> Set.of("软件工程", "计算机科学与技术").contains(unit.getName()))
+                .filter(unit -> Set.of("Software Engineering", "Computer Science").contains(unit.getName()))
                 .allMatch(unit -> existingCollege.getId().equals(unit.getParentId())));
 
         User disabled = users.values().stream()
