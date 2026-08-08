@@ -1,0 +1,29 @@
+package com.projecthelper.ai;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public final class AiExecutionContext {
+    private static final ThreadLocal<List<Citation>> CITATIONS = ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<Action>> ACTIONS = ThreadLocal.withInitial(ArrayList::new);
+
+    private AiExecutionContext() {}
+
+    public static void reset() {
+        CITATIONS.set(new ArrayList<>());
+        ACTIONS.set(new ArrayList<>());
+    }
+
+    public static void addCitation(Citation citation) {
+        if (CITATIONS.get().stream().noneMatch(existing -> existing.documentId().equals(citation.documentId())
+                && existing.chunkIndex() == citation.chunkIndex())) CITATIONS.get().add(citation);
+    }
+
+    public static void addAction(Action action) { ACTIONS.get().add(action); }
+    public static List<Citation> citations() { return List.copyOf(CITATIONS.get()); }
+    public static List<Action> actions() { return List.copyOf(ACTIONS.get()); }
+    public static void clear() { CITATIONS.remove(); ACTIONS.remove(); }
+
+    public record Citation(String documentId, String title, int chunkIndex) {}
+    public record Action(String type, String entityId, String summary) {}
+}
