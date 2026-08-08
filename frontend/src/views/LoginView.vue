@@ -24,14 +24,14 @@ async function submit() {
       <p>Graduation Project Hub</p>
     </section>
     <section class="login-form-wrap">
-      <form class="login-form" @submit.prevent="submit">
+      <div class="login-form">
         <div><h2>Sign in</h2><p>Use the account provided by your school</p></div>
-        <el-form label-position="top">
+        <el-form label-position="top" @submit.prevent="submit">
           <el-form-item label="Username"><el-input v-model="form.username" :prefix-icon="User" size="large" autocomplete="username" /></el-form-item>
           <el-form-item label="Password"><el-input v-model="form.password" :prefix-icon="Lock" type="password" show-password size="large" autocomplete="current-password" @keyup.enter="submit" /></el-form-item>
           <el-button native-type="submit" type="primary" size="large" :loading="loading" :disabled="!form.username || !form.password">Sign in</el-button>
         </el-form>
-      </form>
+      </div>
     </section>
   </main>
 </template>
