@@ -54,9 +54,6 @@ public class AdminUserController {
         user.setCollegeId(request.collegeId());
         user.setMajorId(request.majorId());
         user.setMentorId(request.mentorId());
-        if (request.initialPassword() != null && !request.initialPassword().isBlank()) {
-            user.setPasswordHash(passwordEncoder.encode(request.initialPassword()));
-        }
         user.setUpdatedAt(Instant.now());
         return ApiResponse.success(UserView.of(userRepository.save(user)));
     }
@@ -71,12 +68,16 @@ public class AdminUserController {
     }
 
     private void validate(UserRequest request, String updatingId) {
-        var college = organizationRepository.findById(request.collegeId())
-                .orElseThrow(() -> BusinessException.badRequest("College not found"));
-        var major = organizationRepository.findById(request.majorId())
-                .orElseThrow(() -> BusinessException.badRequest("Major not found"));
-        if (college.getType() != OrganizationType.COLLEGE || major.getType() != OrganizationType.MAJOR
-                || !college.getId().equals(major.getParentId())) throw BusinessException.badRequest("College and major do not match");
+        if (request.role() != UserRole.ADMIN) {
+            var college = organizationRepository.findById(request.collegeId())
+                    .orElseThrow(() -> BusinessException.badRequest("College not found"));
+            var major = organizationRepository.findById(request.majorId())
+                    .orElseThrow(() -> BusinessException.badRequest("Major not found"));
+            if (college.getType() != OrganizationType.COLLEGE || major.getType() != OrganizationType.MAJOR
+                    || !college.getId().equals(major.getParentId())) {
+                throw BusinessException.badRequest("College and major do not match");
+            }
+        }
         if (request.role() == UserRole.STUDENT) {
             if (request.studentNo() == null || request.studentNo().isBlank()) throw BusinessException.badRequest("Students must provide a student number");
             User mentor = userRepository.findById(request.mentorId()).orElseThrow(() -> BusinessException.badRequest("Mentor not found"));
@@ -93,6 +94,6 @@ public class AdminUserController {
 
     public record UserRequest(@NotBlank String username, String initialPassword, @NotBlank String realName,
                               @NotNull UserRole role, String studentNo, String teacherNo,
-                              @NotBlank String collegeId, @NotBlank String majorId, String mentorId) {}
+                              String collegeId, String majorId, String mentorId) {}
     public record StatusRequest(@NotNull UserStatus status) {}
 }

@@ -35,6 +35,8 @@ app:
     embedding-dimension: ${EMBEDDING_DIMENSION:1024}
     chunk-size: 500
     chunk-overlap: 50
+  project-submissions:
+    storage-path: ${PROJECT_SUBMISSIONS_STORAGE_PATH:data/project-submissions}
   seed:
     enabled: ${SEED_ENABLED:false}
     default-password: ${SEED_DEFAULT_PASSWORD:ProjectHelper@123}

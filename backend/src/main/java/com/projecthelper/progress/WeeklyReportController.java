@@ -2,8 +2,6 @@ package com.projecthelper.progress;
 
 import com.projecthelper.common.ApiResponse;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -66,11 +64,9 @@ public class WeeklyReportController {
     }
 
     public record ReportRequest(@NotNull LocalDate weekStart, @NotBlank String completedWork,
-                                String currentProblems, @NotBlank String nextWeekPlan,
-                                @Min(0) @Max(100) int progressPercentage) {
+                                String currentProblems, @NotBlank String nextWeekPlan) {
         WeeklyReportService.ReportCommand command() {
-            return new WeeklyReportService.ReportCommand(weekStart, completedWork, currentProblems,
-                    nextWeekPlan, progressPercentage);
+            return new WeeklyReportService.ReportCommand(weekStart, completedWork, currentProblems, nextWeekPlan);
         }
     }
     public record ReviewRequest(@NotBlank String content) {}

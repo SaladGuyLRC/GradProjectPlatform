@@ -55,10 +55,11 @@ public class AuthController {
     public record PasswordRequest(@NotBlank String oldPassword, @NotBlank String newPassword) {}
     public record LoginResponse(String token, long expiresIn, UserView user) {}
     public record UserView(String id, String username, String realName, String role, String studentNo,
-                           String teacherNo, String collegeId, String majorId, String mentorId) {
+                           String teacherNo, String collegeId, String majorId, String mentorId, String status) {
         public static UserView of(User user) {
             return new UserView(user.getId(), user.getUsername(), user.getRealName(), user.getRole().name(),
-                    user.getStudentNo(), user.getTeacherNo(), user.getCollegeId(), user.getMajorId(), user.getMentorId());
+                    user.getStudentNo(), user.getTeacherNo(), user.getCollegeId(), user.getMajorId(), user.getMentorId(),
+                    user.getStatus() == null ? null : user.getStatus().name());
         }
     }
 }

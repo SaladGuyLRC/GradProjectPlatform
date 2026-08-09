@@ -3,7 +3,7 @@ import { api, type ApiResponse } from '../api'
 
 export interface UserInfo {
   id: string; username: string; realName: string; role: 'ADMIN' | 'MENTOR' | 'STUDENT'
-  studentNo?: string; teacherNo?: string; collegeId?: string; majorId?: string; mentorId?: string
+  studentNo?: string; teacherNo?: string; collegeId?: string; majorId?: string; mentorId?: string; status?: 'ACTIVE' | 'DISABLED'
 }
 
 export const useAuthStore = defineStore('auth', {

@@ -4,6 +4,7 @@ import com.projecthelper.common.BusinessException;
 import com.projecthelper.user.User;
 import com.projecthelper.user.UserRepository;
 import com.projecthelper.user.UserRole;
+import com.projecthelper.user.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +54,7 @@ public class OrganizationService {
         List<OrganizationUnit> units = list().stream().filter(OrganizationUnit::isActive).toList();
         Map<String, List<User>> mentorsByMajor = new HashMap<>();
         for (User user : userRepository.findAll()) {
-            if (user.getRole() == UserRole.MENTOR && user.getMajorId() != null) {
+            if (user.getRole() == UserRole.MENTOR && user.getStatus() == UserStatus.ACTIVE && user.getMajorId() != null) {
                 mentorsByMajor.computeIfAbsent(user.getMajorId(), key -> new ArrayList<>()).add(user);
             }
         }
@@ -65,6 +66,7 @@ public class OrganizationService {
                             .sorted(Comparator.comparing(User::getRealName))
                             .map(mentor -> new MentorNode(mentor.getId(), mentor.getRealName(),
                                     userRepository.findByMentorIdOrderByRealName(mentor.getId()).stream()
+                                            .filter(student -> student.getStatus() == UserStatus.ACTIVE)
                                             .map(student -> new StudentNode(student.getId(), student.getRealName(), student.getStudentNo()))
                                             .toList())).toList())).toList();
             return new CollegeNode(college.getId(), college.getName(), majors);

@@ -26,7 +26,6 @@ public class WeeklyReport {
     private String completedWork;
     private String currentProblems;
     private String nextWeekPlan;
-    private int progressPercentage;
     @Indexed private WeeklyReportStatus status;
     private Instant submittedAt;
     private Review review;

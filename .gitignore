@@ -36,3 +36,4 @@
 # Agent-local configuration
 **/.claude/
 **/.codex/
+.gstack/

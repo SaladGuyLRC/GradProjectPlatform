@@ -9,7 +9,6 @@ interface Dashboard {
   studentProfile: { realName: string; studentNo: string; college: string; major: string }
   mentorProfile?: { realName: string; teacherNo: string }
   project?: { title: string; status: string; progressPercentage?: number }
-  currentWeekReport?: { status: string; progressPercentage: number }
   deadlineBuckets: { overdue: Bucket; nextThreeDays: Bucket; nextSevenDays: Bucket }
 }
 interface Bucket { count: number; items: Task[] }
@@ -17,7 +16,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const loading = ref(false)
 const data = ref<Dashboard | null>(null)
-const roleName = computed(() => ({ ADMIN: 'Administrator', MENTOR: 'Mentor', STUDENT: 'Student' }[auth.user?.role || 'STUDENT']))
+const roleName = computed(() => ({ ADMIN: 'Admin', MENTOR: 'Mentor', STUDENT: 'Student' }[auth.user?.role || 'STUDENT']))
 onMounted(async () => {
   if (auth.user?.role !== 'STUDENT') return
   loading.value = true
@@ -37,7 +36,7 @@ const formatDate = (value: string) => new Date(value).toLocaleString('en-GB', { 
         <article class="metric"><label>Due in 3–7 days</label><strong>{{ data.deadlineBuckets.nextSevenDays.count }}</strong><small>Keep your plan on track</small></article>
       </div>
       <div class="grid-2 dashboard-sections">
-        <section class="surface"><h2 class="section-title">Profile & project</h2><dl class="info-list"><dt>Student number</dt><dd>{{ data.studentProfile.studentNo }}</dd><dt>College / major</dt><dd>{{ data.studentProfile.college }} / {{ data.studentProfile.major }}</dd><dt>Mentor</dt><dd>{{ data.mentorProfile?.realName || 'Not assigned' }}</dd><dt>Project</dt><dd>{{ data.project?.title || 'Not created' }}</dd><dt>Project status</dt><dd><el-tag size="small">{{ data.project?.status || 'None' }}</el-tag></dd><dt>Current report</dt><dd><el-tag size="small" type="success">{{ data.currentWeekReport?.status || 'Not created' }}</el-tag></dd></dl></section>
+        <section class="surface"><h2 class="section-title">Profile & project</h2><dl class="info-list"><dt>Student number</dt><dd>{{ data.studentProfile.studentNo }}</dd><dt>College / major</dt><dd>{{ data.studentProfile.college }} / {{ data.studentProfile.major }}</dd><dt>Mentor</dt><dd>{{ data.mentorProfile?.realName || 'Not assigned' }}</dd><dt>Project</dt><dd>{{ data.project?.title || 'Not created' }}</dd><dt>Project status</dt><dd><el-tag size="small">{{ data.project?.status || 'None' }}</el-tag></dd></dl></section>
         <section class="surface"><h2 class="section-title">Upcoming deadlines</h2><div v-if="![...data.deadlineBuckets.overdue.items, ...data.deadlineBuckets.nextThreeDays.items].length" class="empty-state">No upcoming deadlines</div><ul v-else class="deadline-list"><li v-for="task in [...data.deadlineBuckets.overdue.items, ...data.deadlineBuckets.nextThreeDays.items]" :key="task.id"><span>{{ task.title }}</span><time :class="{ danger: new Date(task.deadlineAt) < new Date() }">{{ formatDate(task.deadlineAt) }}</time></li></ul></section>
       </div>
     </template>

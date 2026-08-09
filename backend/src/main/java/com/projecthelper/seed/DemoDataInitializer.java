@@ -102,7 +102,7 @@ public class DemoDataInitializer implements ApplicationRunner {
     }
 
     private Users seedUsers(Organizations organizations, Instant now) {
-        User admin = user("seed-user-admin", "admin", "System Administrator", UserRole.ADMIN,
+        User admin = user("seed-user-admin", "admin", "Admin", UserRole.ADMIN,
                 null, null, null, null, null, UserStatus.ACTIVE, now);
 
         User mentor1 = user("seed-user-mentor1", "mentor1", "Alex Morgan", UserRole.MENTOR,
@@ -227,44 +227,44 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     private void seedWeeklyReports(Users users, Projects projects, LocalDate currentMonday, Instant now) {
         weeklyReport("seed-report-student1-current", users.student1(), projects.project1(),
-                currentMonday, WeeklyReportStatus.DRAFT, 45,
+                currentMonday, WeeklyReportStatus.DRAFT,
                 "Completed backend APIs for login, organization management, projects, weekly reports, tasks and the student dashboard.",
                 "Redis Stack vector search and model tool calls still need validation in a real environment.",
                 "Complete the AI conversation loop and start the Vue frontend foundation.", null, null, now);
         weeklyReport("seed-report-student1-previous", users.student1(), projects.project1(),
-                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 38,
+                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED,
                 "Completed JWT authentication, college and major management, and the members tree.",
                 "More object-level permission test scenarios are needed.",
                 "Implement graduation projects, weekly reports and mentor reviews.",
                 now.minus(Duration.ofDays(7)), "Progress is on track. Prioritise validating critical permission boundaries next.", now);
 
         weeklyReport("seed-report-student2-current", users.student2(), projects.project2(),
-                currentMonday, WeeklyReportStatus.SUBMITTED, 60,
+                currentMonday, WeeklyReportStatus.SUBMITTED,
                 "Completed booking conflict detection and paginated booking queries.",
                 "Time-slot conflict validation still needs testing under high concurrency.",
                 "Add API tests and complete the first booking page.",
                 now.minus(Duration.ofHours(5)), null, now);
         weeklyReport("seed-report-student2-previous", users.student2(), projects.project2(),
-                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 52,
+                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED,
                 "Completed the base data model for laboratories and rooms.",
                 "Booking rules need further confirmation with the mentor.",
                 "Implement booking creation, cancellation and status management.",
                 now.minus(Duration.ofDays(7)), "The data model is clear. Keep time and timezone handling consistent.", now);
 
         weeklyReport("seed-report-student3-current", users.student3(), projects.project3(),
-                currentMonday, WeeklyReportStatus.SUBMITTED, 40,
+                currentMonday, WeeklyReportStatus.SUBMITTED,
                 "Completed practical course and student group design.",
                 "Milestones need adjustment while the project is paused.",
                 "Confirm the reduced scope and resume core API development.",
                 now.minus(Duration.ofHours(8)), null, now);
         weeklyReport("seed-report-student4-previous", users.student4(), projects.project4(),
-                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED, 100,
+                currentMonday.minusWeeks(1), WeeklyReportStatus.REVIEWED,
                 "Completed final tests, demo data and deployment documentation.",
                 "No blocking issues.",
                 "Prepare defense materials and the project summary.",
                 now.minus(Duration.ofDays(7)), "The project has reached its target and can move into defense preparation.", now);
         weeklyReport("seed-report-student6-current", users.student6(), projects.project6(),
-                currentMonday, WeeklyReportStatus.DRAFT, 25,
+                currentMonday, WeeklyReportStatus.DRAFT,
                 "Completed the thesis template parsing approach and chapter structure model.",
                 "Text extraction quality varies significantly between PDFs.",
                 "Implement formatting rule checks and result presentation.",
@@ -272,7 +272,7 @@ public class DemoDataInitializer implements ApplicationRunner {
     }
 
     private WeeklyReport weeklyReport(String id, User student, GraduationProject project, LocalDate weekStart,
-                                      WeeklyReportStatus status, int progress, String completedWork,
+                                      WeeklyReportStatus status, String completedWork,
                                       String currentProblems, String nextWeekPlan, Instant submittedAt,
                                       String reviewContent, Instant now) {
         return existing(
@@ -301,7 +301,6 @@ public class DemoDataInitializer implements ApplicationRunner {
                             .completedWork(completedWork)
                             .currentProblems(currentProblems)
                             .nextWeekPlan(nextWeekPlan)
-                            .progressPercentage(progress)
                             .status(status)
                             .submittedAt(submittedAt)
                             .review(review)

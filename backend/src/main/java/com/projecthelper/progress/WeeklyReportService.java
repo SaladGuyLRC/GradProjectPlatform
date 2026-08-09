@@ -37,7 +37,7 @@ public class WeeklyReportService {
         return reportRepository.save(WeeklyReport.builder().studentId(student.getId()).mentorId(student.getMentorId())
                 .projectId(project.getId()).weekStart(command.weekStart()).weekEnd(command.weekStart().plusDays(6))
                 .completedWork(command.completedWork()).currentProblems(command.currentProblems())
-                .nextWeekPlan(command.nextWeekPlan()).progressPercentage(command.progressPercentage())
+                .nextWeekPlan(command.nextWeekPlan())
                 .status(WeeklyReportStatus.DRAFT).createdAt(now).updatedAt(now).build());
     }
 
@@ -55,7 +55,6 @@ public class WeeklyReportService {
         report.setCompletedWork(command.completedWork());
         report.setCurrentProblems(command.currentProblems());
         report.setNextWeekPlan(command.nextWeekPlan());
-        report.setProgressPercentage(command.progressPercentage());
         report.setUpdatedAt(Instant.now());
         return reportRepository.save(report);
     }
@@ -145,11 +144,8 @@ public class WeeklyReportService {
 
     private void validate(ReportCommand command) {
         if (command.weekStart().getDayOfWeek() != DayOfWeek.MONDAY) throw BusinessException.badRequest("weekStart must be a Monday");
-        if (command.progressPercentage() < 0 || command.progressPercentage() > 100) {
-            throw BusinessException.badRequest("Progress must be between 0 and 100");
-        }
     }
 
     public record ReportCommand(LocalDate weekStart, String completedWork, String currentProblems,
-                                String nextWeekPlan, int progressPercentage) {}
+                                String nextWeekPlan) {}
 }
