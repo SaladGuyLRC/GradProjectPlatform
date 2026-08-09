@@ -1,6 +1,7 @@
 package com.projecthelper.project;
 
 import com.projecthelper.common.BusinessException;
+import com.projecthelper.progress.WeeklyReportRepository;
 import com.projecthelper.security.CurrentUserService;
 import com.projecthelper.user.User;
 import com.projecthelper.user.UserRepository;
@@ -14,6 +15,7 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class ProjectService {
     private final ProjectRepository projectRepository;
+    private final WeeklyReportRepository weeklyReportRepository;
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
 
@@ -37,6 +39,10 @@ public class ProjectService {
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
                 .orElseThrow(() -> BusinessException.notFound("Create a graduation project first"));
+        if (!java.util.Objects.equals(project.getStartDate(), command.startDate())
+                && weeklyReportRepository.findFirstByStudentIdOrderByWeekStartDesc(student.getId()).isPresent()) {
+            throw BusinessException.conflict("The project start date cannot be changed after the first weekly report is created");
+        }
         validate(command);
         project.setTitle(command.title().trim());
         project.setSummary(command.summary());

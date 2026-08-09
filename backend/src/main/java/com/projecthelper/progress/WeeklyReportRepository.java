@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.Optional;
 
 public interface WeeklyReportRepository extends MongoRepository<WeeklyReport, String> {
@@ -12,5 +13,6 @@ public interface WeeklyReportRepository extends MongoRepository<WeeklyReport, St
     Page<WeeklyReport> findByStudentId(String studentId, Pageable pageable);
     Page<WeeklyReport> findByMentorId(String mentorId, Pageable pageable);
     Page<WeeklyReport> findByMentorIdAndStatus(String mentorId, WeeklyReportStatus status, Pageable pageable);
+    Page<WeeklyReport> findByMentorIdAndStatusIn(String mentorId, Collection<WeeklyReportStatus> statuses, Pageable pageable);
     Optional<WeeklyReport> findFirstByStudentIdOrderByWeekStartDesc(String studentId);
 }

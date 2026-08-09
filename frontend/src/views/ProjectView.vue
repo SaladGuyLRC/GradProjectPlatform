@@ -18,12 +18,14 @@ interface Project {
   plannedEndDate?: string
 }
 interface Submission { id: string; originalFilename: string; fileSize: number; version: number; uploadedAt: string }
+interface ReportPage { totalElements: number }
 
 const auth = useAuthStore()
 const isMentor = computed(() => auth.user?.role === 'MENTOR')
 const title = computed(() => isMentor.value ? 'Student Projects' : 'My Project')
 const description = computed(() => isMentor.value ? 'View projects and submissions from your assigned students' : 'Manage your graduation project and submit your paper')
 const loading = ref(false), saving = ref(false), uploading = ref(false), dialog = ref(false)
+const startDateLocked = ref(false)
 const project = ref<Project | null>(null), submissions = ref<Submission[]>([]), selectedStudent = ref('')
 const students = ref<UserInfo[]>([]), selectedFile = ref<File | null>(null)
 const form = reactive({ title: '', summary: '', techStack: '', repositoryUrl: '', status: 'IN_PROGRESS', startDate: '', plannedEndDate: '' })
@@ -44,6 +46,10 @@ async function load() {
     const submissionUrl = isMentor.value ? `/mentor/students/${selectedStudent.value}/project/submissions` : '/projects/me/submissions'
     project.value = (await api.get<ApiResponse<Project | null>>(projectUrl)).data.data
     submissions.value = (await api.get<ApiResponse<Submission[]>>(submissionUrl)).data.data
+    if (!isMentor.value) {
+      const reports = (await api.get<ApiResponse<ReportPage>>('/weekly-reports/me', { params: { page: 0, size: 1 } })).data.data
+      startDateLocked.value = reports.totalElements > 0
+    }
   } finally { loading.value = false }
 }
 
@@ -113,7 +119,7 @@ const statusLabel = (value: string) => value.replaceAll('_', ' ').toLowerCase().
     </template>
     <section v-else class="surface empty-project"><h2>No project yet</h2><p>{{ isMentor ? 'This student has not created a project.' : 'Create your graduation project profile before uploading a submission.' }}</p><el-button v-if="!isMentor" type="primary" :icon="Plus" @click="openProjectForm">Create project</el-button></section>
 
-    <el-dialog v-model="dialog" :title="project ? 'Edit project' : 'Create project'" width="620px"><el-form label-position="top"><el-form-item label="Project title" required><el-input v-model="form.title" maxlength="150" /></el-form-item><el-form-item label="Project summary"><el-input v-model="form.summary" type="textarea" :rows="5" maxlength="2000" show-word-limit /></el-form-item><el-form-item label="Technology stack"><el-input v-model="form.techStack" placeholder="Vue, Spring Boot, MongoDB" /></el-form-item><el-form-item label="Repository URL"><el-input v-model="form.repositoryUrl" placeholder="https://github.com/..." /></el-form-item><div class="form-row"><el-form-item label="Status" required><el-select v-model="form.status" style="width:100%"><el-option v-for="value in ['IN_PROGRESS','PAUSED','COMPLETED']" :key="value" :label="statusLabel(value)" :value="value" /></el-select></el-form-item><el-form-item label="Start date"><el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></div><el-form-item label="Planned end date"><el-date-picker v-model="form.plannedEndDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-form><template #footer><el-button @click="dialog=false">Cancel</el-button><el-button type="primary" :loading="saving" :disabled="!form.title.trim()" @click="saveProject">Save project</el-button></template></el-dialog>
+    <el-dialog v-model="dialog" :title="project ? 'Edit project' : 'Create project'" width="620px"><el-form label-position="top"><el-form-item label="Project title" required><el-input v-model="form.title" maxlength="150" /></el-form-item><el-form-item label="Project summary"><el-input v-model="form.summary" type="textarea" :rows="5" maxlength="2000" show-word-limit /></el-form-item><el-form-item label="Technology stack"><el-input v-model="form.techStack" placeholder="Vue, Spring Boot, MongoDB" /></el-form-item><el-form-item label="Repository URL"><el-input v-model="form.repositoryUrl" placeholder="https://github.com/..." /></el-form-item><div class="form-row"><el-form-item label="Status" required><el-select v-model="form.status" style="width:100%"><el-option v-for="value in ['IN_PROGRESS','PAUSED','COMPLETED']" :key="value" :label="statusLabel(value)" :value="value" /></el-select></el-form-item><el-form-item label="Start date"><el-date-picker v-model="form.startDate" type="date" value-format="YYYY-MM-DD" :disabled="startDateLocked" style="width:100%" /></el-form-item></div><el-form-item label="Planned end date"><el-date-picker v-model="form.plannedEndDate" type="date" value-format="YYYY-MM-DD" style="width:100%" /></el-form-item></el-form><template #footer><el-button @click="dialog=false">Cancel</el-button><el-button type="primary" :loading="saving" :disabled="!form.title.trim()" @click="saveProject">Save project</el-button></template></el-dialog>
   </div>
 </template>
 

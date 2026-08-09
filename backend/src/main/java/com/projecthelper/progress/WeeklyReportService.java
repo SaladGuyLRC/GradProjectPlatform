@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,7 @@ public class WeeklyReportService {
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
                 .orElseThrow(() -> BusinessException.badRequest("Create a graduation project first"));
-        validate(command);
+        validate(command, project);
         if (reportRepository.findByStudentIdAndWeekStart(student.getId(), command.weekStart()).isPresent()) {
             throw BusinessException.conflict("A report for this week already exists");
         }
@@ -45,7 +46,9 @@ public class WeeklyReportService {
         User student = requireStudent();
         WeeklyReport report = ownedReport(id, student.getId());
         if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("Submitted reports cannot be edited");
-        validate(command);
+        GraduationProject project = projectRepository.findByStudentId(student.getId())
+                .orElseThrow(() -> BusinessException.badRequest("Create a graduation project first"));
+        validate(command, project);
         if (!report.getWeekStart().equals(command.weekStart())
                 && reportRepository.findByStudentIdAndWeekStart(student.getId(), command.weekStart()).isPresent()) {
             throw BusinessException.conflict("A report for the target week already exists");
@@ -99,8 +102,11 @@ public class WeeklyReportService {
     public Page<WeeklyReport> mentorReports(WeeklyReportStatus status, int page, int size) {
         User mentor = currentUserService.require();
         if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can access this report");
-        return status == null ? reportRepository.findByMentorId(mentor.getId(), pageable(page, size))
-                : reportRepository.findByMentorIdAndStatus(mentor.getId(), status, pageable(page, size));
+        PageRequest request = pageable(page, size);
+        if (status == WeeklyReportStatus.DRAFT) return Page.empty(request);
+        return status == null ? reportRepository.findByMentorIdAndStatusIn(mentor.getId(),
+                        List.of(WeeklyReportStatus.SUBMITTED, WeeklyReportStatus.REVIEWED), request)
+                : reportRepository.findByMentorIdAndStatus(mentor.getId(), status, request);
     }
 
     public WeeklyReport get(String id) {
@@ -110,6 +116,9 @@ public class WeeklyReportService {
                 || actor.getId().equals(report.getStudentId())
                 || actor.getId().equals(report.getMentorId());
         if (!allowed) throw BusinessException.forbidden("You are not allowed to view this weekly report");
+        if (actor.getRole() == UserRole.MENTOR && report.getStatus() == WeeklyReportStatus.DRAFT) {
+            throw BusinessException.forbidden("Draft reports are not available to mentors");
+        }
         return report;
     }
 
@@ -121,7 +130,10 @@ public class WeeklyReportService {
             if (!actor.getId().equals(student.getMentorId())) throw BusinessException.forbidden("The student is not assigned to this mentor");
         }
         if (actor.getRole() == UserRole.ADMIN) throw BusinessException.forbidden("Administrators cannot use AI to read student reports");
-        return reportRepository.findByStudentId(target, PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "weekStart"))).getContent();
+        return reportRepository.findByStudentId(target, PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "weekStart")))
+                .getContent().stream()
+                .filter(report -> actor.getRole() != UserRole.MENTOR || report.getStatus() != WeeklyReportStatus.DRAFT)
+                .toList();
     }
 
     private PageRequest pageable(int page, int size) {
@@ -142,8 +154,18 @@ public class WeeklyReportService {
         return user;
     }
 
-    private void validate(ReportCommand command) {
-        if (command.weekStart().getDayOfWeek() != DayOfWeek.MONDAY) throw BusinessException.badRequest("weekStart must be a Monday");
+    private void validate(ReportCommand command, GraduationProject project) {
+        if (project.getStartDate() == null || project.getPlannedEndDate() == null) {
+            throw BusinessException.badRequest("Set the project start and planned end dates before creating a weekly report");
+        }
+        if (command.weekStart().getDayOfWeek() != DayOfWeek.MONDAY) {
+            throw BusinessException.badRequest("weekStart must be a Monday");
+        }
+        LocalDate firstMonday = project.getStartDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate lastMonday = project.getPlannedEndDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        if (command.weekStart().isBefore(firstMonday) || command.weekStart().isAfter(lastMonday)) {
+            throw BusinessException.badRequest("The report week must fall within the project period");
+        }
     }
 
     public record ReportCommand(LocalDate weekStart, String completedWork, String currentProblems,
