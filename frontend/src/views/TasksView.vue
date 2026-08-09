@@ -41,6 +41,9 @@ async function changeStatus(task: Task, value: string) { await api.patch(`/tasks
 async function remove(task: Task) { await ElMessageBox.confirm(`Delete “${task.title}”?`, 'Delete task', { type: 'warning' }); await api.delete(`/tasks/${task.id}`); ElMessage.success('Task deleted'); await load() }
 const overdue = (task: Task) => task.status !== 'COMPLETED' && new Date(task.deadlineAt) < new Date()
 const date = (v: string) => new Date(v).toLocaleString('en-GB')
+const assignedBy = (task: Task) => task.creatorId === auth.user?.id
+  ? 'You'
+  : isMentor.value ? students.value.find(student => student.id === task.creatorId)?.realName || 'Student' : 'Mentor'
 </script>
 
 <template>
@@ -55,6 +58,7 @@ const date = (v: string) => new Date(v).toLocaleString('en-GB')
       <el-table v-loading="loading" :data="tasks" empty-text="No tasks" style="width:100%">
         <el-table-column prop="title" label="Task" min-width="190"><template #default="{ row }"><strong>{{ row.title }}</strong><div class="task-desc">{{ row.description }}</div></template></el-table-column>
         <el-table-column prop="type" label="Type" width="110" />
+        <el-table-column label="Assigned by" min-width="130"><template #default="{ row }">{{ assignedBy(row) }}</template></el-table-column>
         <el-table-column prop="priority" label="Priority" width="105"><template #default="{ row }"><el-tag :type="row.priority === 'HIGH' ? 'danger' : row.priority === 'LOW' ? 'info' : 'warning'" size="small">{{ row.priority }}</el-tag></template></el-table-column>
         <el-table-column label="Status" width="155"><template #default="{ row }"><el-select v-if="!isMentor" :model-value="row.status" size="small" @change="changeStatus(row, $event)"><el-option v-for="s in statuses" :key="s" :label="s" :value="s" /></el-select><el-tag v-else size="small">{{ row.status }}</el-tag></template></el-table-column>
         <el-table-column label="Deadline" min-width="170"><template #default="{ row }"><span :class="{ danger: overdue(row) }">{{ date(row.deadlineAt) }}</span><small v-if="overdue(row)" class="overdue-label">Overdue</small></template></el-table-column>
