@@ -21,6 +21,7 @@ import java.util.UUID;
 public class AiService {
     private static final String SYSTEM = "You are the ProjectHelper graduation project assistant. Use tools only for data the authenticated user may access. "
             + "A student may query only their own project, reports and tasks; a mentor may query only assigned students; an administrator cannot read student business data. "
+            + "For task results, treat the provided overdue field as authoritative: label every task with overdue=true as Overdue, and never label overdue=false or an absent field as Overdue. "
             + "Never submit or review weekly reports and never delete important business data. Answer in clear English and cite knowledge-base sources.";
 
     private final ObjectProvider<ChatClient> chatClientProvider;

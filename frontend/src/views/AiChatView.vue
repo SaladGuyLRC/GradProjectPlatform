@@ -12,12 +12,12 @@ onMounted(() => localStorage.setItem('ph_conversation_id', conversationId.value)
 function newConversation() { conversationId.value = crypto.randomUUID(); localStorage.setItem('ph_conversation_id', conversationId.value); messages.value = [] }
 async function send() {
   const text = input.value.trim(); if (!text || loading.value) return
-  messages.value.push({ role:'user', content:text }); loading.value = true; await nextTick(); stream.value?.scrollTo({ top: stream.value.scrollHeight, behavior:'smooth' })
+  messages.value.push({ role:'user', content:text }); input.value = ''; loading.value = true; await nextTick(); stream.value?.scrollTo({ top: stream.value.scrollHeight, behavior:'smooth' })
   try {
-    const { data } = await api.post<ApiResponse<{ conversationId:string; answer:string; citations:Citation[]; actions:Action[] }>>('/ai/chat', { message:text, conversationId:conversationId.value })
+    const { data } = await api.post<ApiResponse<{ conversationId:string; answer:string; citations:Citation[]; actions:Action[] }>>('/ai/chat', { message:text, conversationId:conversationId.value }, { timeout: 60000 })
     conversationId.value = data.data.conversationId; localStorage.setItem('ph_conversation_id', conversationId.value)
-    messages.value.push({ role:'assistant', content:data.data.answer, citations:data.data.citations, actions:data.data.actions }); input.value = ''
-  } catch { messages.value.push({ role:'assistant', content:'Send failed. Check the AI configuration or try again later. Your input was kept.', error:true }) }
+    messages.value.push({ role:'assistant', content:data.data.answer, citations:data.data.citations, actions:data.data.actions })
+  } catch { messages.value.push({ role:'assistant', content:'Send failed. Check the AI configuration or try again later.', error:true }) }
   finally { loading.value=false; await nextTick(); stream.value?.scrollTo({ top:stream.value.scrollHeight, behavior:'smooth' }) }
 }
 </script>

@@ -2,6 +2,7 @@ package com.projecthelper.ai.tools;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.projecthelper.ai.AiExecutionContext;
 import com.projecthelper.task.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -17,12 +19,21 @@ public class TaskTools {
     private final TaskService taskService;
     private final ObjectMapper objectMapper;
 
-    @Tool(description = "Find tasks. A student can query their own tasks; a mentor can query tasks for an assigned student.")
+    @Tool(description = "Find tasks. A student can query their own tasks; a mentor can query tasks for an assigned student. "
+            + "When summarising results, mark every task with overdue=true as Overdue, do not mark overdue=false, and do not infer overdue when the field is absent.")
     public String findTasks(
             @ToolParam(description = "Assigned student name for a mentor; omit for a student", required = false) String studentName,
             @ToolParam(description = "Optional status: TODO, IN_PROGRESS or COMPLETED", required = false) String status) {
         TaskStatus parsed = status == null || status.isBlank() ? null : TaskStatus.valueOf(status.toUpperCase());
-        try { return objectMapper.writeValueAsString(taskService.listForAi(studentName, parsed)); }
+        Instant now = Instant.now();
+        List<ObjectNode> tasks = taskService.listForAi(studentName, parsed).stream().map(task -> {
+            ObjectNode result = objectMapper.valueToTree(task);
+            if (task.getStatus() != TaskStatus.COMPLETED) {
+                result.put("overdue", task.getDeadlineAt() != null && task.getDeadlineAt().isBefore(now));
+            }
+            return result;
+        }).toList();
+        try { return objectMapper.writeValueAsString(tasks); }
         catch (JsonProcessingException exception) { throw new IllegalStateException("Failed to serialize tasks", exception); }
     }
 

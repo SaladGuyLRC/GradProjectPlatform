@@ -6,15 +6,26 @@ import com.projecthelper.user.User;
 import com.projecthelper.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class AiServiceConfigurationTest {
+    @Test
+    void chatClientFactoryDoesNotDependOnBeanRegistrationOrder() throws NoSuchMethodException {
+        var method = AiConfiguration.class.getDeclaredMethod("chatClient", org.springframework.ai.chat.model.ChatModel.class,
+                com.projecthelper.ai.tools.AcademicTools.class, com.projecthelper.ai.tools.KnowledgeTools.class,
+                com.projecthelper.ai.tools.TaskTools.class, com.projecthelper.ai.tools.TimeTools.class);
+
+        assertNull(method.getAnnotation(ConditionalOnBean.class));
+    }
+
     @Test
     void missingDashScopeKeyReturnsConfigurationError() {
         ObjectProvider<ChatClient> provider = mock(ObjectProvider.class);
