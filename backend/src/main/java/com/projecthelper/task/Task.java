@@ -1,5 +1,6 @@
 package com.projecthelper.task;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -18,6 +19,9 @@ public class Task {
     private String projectId;
     @Indexed private String studentId;
     @Indexed private String creatorId;
+    @JsonIgnore
+    @Indexed(unique = true, sparse = true)
+    private String sourceDraftId;
     private String title;
     private String description;
     private TaskType type;

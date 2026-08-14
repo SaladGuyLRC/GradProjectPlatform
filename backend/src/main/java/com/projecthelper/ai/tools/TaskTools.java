@@ -4,8 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.projecthelper.ai.AiExecutionContext;
-import com.projecthelper.task.*;
+import com.projecthelper.ai.taskdraft.TaskDraftResult;
+import com.projecthelper.ai.taskdraft.TaskDraftService;
+import com.projecthelper.task.TaskService;
+import com.projecthelper.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -13,11 +17,13 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TaskTools {
     private final TaskService taskService;
     private final ObjectMapper objectMapper;
+    private final TaskDraftService taskDraftService;
 
     @Tool(description = "Find tasks. A student can query their own tasks; a mentor can query tasks for an assigned student. "
             + "When summarising results, mark every task with overdue=true as Overdue, do not mark overdue=false, and do not infer overdue when the field is absent.")
@@ -37,19 +43,25 @@ public class TaskTools {
         catch (JsonProcessingException exception) { throw new IllegalStateException("Failed to serialize tasks", exception); }
     }
 
-    @Tool(description = "Create a graduation project task only when the user explicitly asks. Do not call without a target student, title and deadline.")
-    public String createTask(
+    @Tool(description = "Prepare a task draft when the user asks to create a task. This tool never creates the task. "
+            + "Pass the user's original deadline wording in deadlineText. Do not calculate timestamps. "
+            + "The task is created only after the user confirms the draft in the interface.")
+    public String prepareTaskDraft(
             @ToolParam(description = "Assigned student name for a mentor; omit for a student", required = false) String studentName,
             @ToolParam(description = "Task title") String title,
             @ToolParam(description = "Task description", required = false) String description,
-            @ToolParam(description = "MEETING, PROGRESS, DOCUMENT, CODE, EXPERIMENT or OTHER") String type,
-            @ToolParam(description = "LOW, MEDIUM or HIGH", required = false) String priority,
-            @ToolParam(description = "Deadline as a Unix seconds timestamp") Long deadlineAt) {
-        Task task = taskService.createFromAi(studentName, title, description,
-                TaskType.valueOf(type.toUpperCase()),
-                priority == null || priority.isBlank() ? TaskPriority.MEDIUM : TaskPriority.valueOf(priority.toUpperCase()),
-                Instant.ofEpochSecond(deadlineAt));
-        AiExecutionContext.addAction(new AiExecutionContext.Action("TASK_CREATED", task.getId(), task.getTitle()));
-        return "Task created successfully. ID=" + task.getId() + ", title=" + task.getTitle() + ", deadline=" + task.getDeadlineAt();
+            @ToolParam(description = "The user's original deadline wording, for example tomorrow at 11 AM; omit only when the user gave no deadline", required = false) String deadlineText,
+            @ToolParam(description = "MEETING, PROGRESS, DOCUMENT, CODE, EXPERIMENT or OTHER", required = false) String type,
+            @ToolParam(description = "LOW, MEDIUM or HIGH", required = false) String priority) {
+        TaskDraftResult result;
+        try {
+            result = taskDraftService.prepare(studentName, title, description, deadlineText, type, priority);
+        } catch (RuntimeException exception) {
+            log.error("Failed to prepare an AI task draft", exception);
+            result = TaskDraftResult.failed();
+        }
+        AiExecutionContext.setTaskDraftResult(result);
+        try { return objectMapper.writeValueAsString(result); }
+        catch (JsonProcessingException exception) { throw new IllegalStateException("Failed to serialize task draft", exception); }
     }
 }

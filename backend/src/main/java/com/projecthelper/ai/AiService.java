@@ -22,6 +22,8 @@ public class AiService {
     private static final String SYSTEM = "You are the ProjectHelper graduation project assistant. Use tools only for data the authenticated user may access. "
             + "A student may query only their own project, reports and tasks; a mentor may query only assigned students; an administrator cannot read student business data. "
             + "For task results, treat the provided overdue field as authoritative: label every task with overdue=true as Overdue, and never label overdue=false or an absent field as Overdue. "
+            + "When a user asks to create a task, call prepareTaskDraft once and pass the user's original deadline wording in deadlineText. "
+            + "Never calculate or provide a timestamp, never claim a task was created from a draft, and wait for the user to confirm the structured draft in the interface. "
             + "Never submit or review weekly reports and never delete important business data. Answer in clear English and cite knowledge-base sources.";
 
     private final ObjectProvider<ChatClient> chatClientProvider;
@@ -45,7 +47,6 @@ public class AiService {
         for (var saved : conversations.load(actor.getId(), conversationId)) {
             history.add("assistant".equals(saved.role()) ? new AssistantMessage(saved.content()) : new UserMessage(saved.content()));
         }
-        conversations.append(actor.getId(), conversationId, new AiConversationStore.ConversationMessage("user", message));
         ChatClient chatClient = chatClientProvider.getIfAvailable();
         if (chatClient == null) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "AI_NOT_CONFIGURED",
@@ -55,9 +56,20 @@ public class AiService {
         try {
             var response = chatClient.prompt().system(SYSTEM).messages(history).user(message).call();
             String answer = response.content() == null ? "Unable to generate an answer right now." : response.content();
+            var draftResult = AiExecutionContext.taskDraftResult();
+            if (draftResult != null) {
+                answer = draftResult.draft() != null
+                        ? "Please review the task details before creating it."
+                        : draftResult.issues().stream().map(issue -> issue.message())
+                        .reduce((first, second) -> first + "\n" + second).orElse(answer);
+            }
+            conversations.append(actor.getId(), conversationId,
+                    new AiConversationStore.ConversationMessage("user", message));
             conversations.append(actor.getId(), conversationId,
                     new AiConversationStore.ConversationMessage("assistant", answer));
-            return new AiChatResponse(conversationId, answer, AiExecutionContext.citations(), AiExecutionContext.actions());
+            return new AiChatResponse(conversationId, answer, AiExecutionContext.citations(), AiExecutionContext.actions(),
+                    draftResult == null ? null : draftResult.draft(),
+                    draftResult == null ? List.of() : draftResult.issues());
         } catch (BusinessException exception) {
             throw exception;
         } catch (Exception exception) {

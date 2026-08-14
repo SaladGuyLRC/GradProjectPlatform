@@ -1,10 +1,15 @@
 package com.projecthelper.knowledge;
 
+import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.output.NestedMultiOutput;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.connection.DecoratedRedisConnection;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.connection.lettuce.LettuceConnection;
 import org.springframework.stereotype.Service;
 
 import java.nio.ByteBuffer;
@@ -27,7 +32,7 @@ public class RedisVectorStore {
     @PostConstruct
     public void initializeIndex() {
         try {
-            execute("FT.INFO", bytes(INDEX));
+            executeMulti("FT.INFO", bytes(INDEX));
         } catch (Exception ignored) {
             try {
                 execute("FT.CREATE",
@@ -75,7 +80,7 @@ public class RedisVectorStore {
 
     public List<SearchHit> search(String question, int topK) {
         float[] queryVector = embeddingClient.embed(question);
-        Object raw = execute("FT.SEARCH", bytes(INDEX),
+        Object raw = executeMulti("FT.SEARCH", bytes(INDEX),
                 bytes("*=>[KNN " + topK + " @contentVector $vector AS score]"),
                 bytes("PARAMS"), bytes("2"), bytes("vector"), vectorBytes(queryVector),
                 bytes("SORTBY"), bytes("score"), bytes("RETURN"), bytes("4"),
@@ -85,25 +90,59 @@ public class RedisVectorStore {
     }
 
     private List<SearchHit> parse(Object raw) {
-        if (!(raw instanceof List<?> list) || list.size() < 3) return List.of();
+        if (!(raw instanceof List<?> list)) return List.of();
+        Object resultsObject = field(list, "results");
+        if (resultsObject instanceof List<?> results) {
+            List<SearchHit> hits = new ArrayList<>();
+            for (Object resultObject : results) {
+                if (!(resultObject instanceof List<?> result)) continue;
+                Object attributesObject = field(result, "extra_attributes");
+                if (attributesObject instanceof List<?> attributes) addHit(hits, attributes);
+            }
+            return hits;
+        }
+        if (list.size() < 3) return List.of();
         List<SearchHit> hits = new ArrayList<>();
         for (int i = 1; i + 1 < list.size(); i += 2) {
             Object fieldsObject = list.get(i + 1);
             if (!(fieldsObject instanceof List<?> fields)) continue;
-            Map<String, String> values = new HashMap<>();
-            for (int j = 0; j + 1 < fields.size(); j += 2) {
-                values.put(asString(fields.get(j)), asString(fields.get(j + 1)));
-            }
-            if (values.get("documentId") != null && values.get("content") != null) {
-                hits.add(new SearchHit(values.get("documentId"), values.getOrDefault("title", ""),
-                        values.get("content"), Integer.parseInt(values.getOrDefault("chunkIndex", "0"))));
-            }
+            addHit(hits, fields);
         }
         return hits;
     }
 
+    private void addHit(List<SearchHit> hits, List<?> fields) {
+        Map<String, String> values = new HashMap<>();
+        for (int i = 0; i + 1 < fields.size(); i += 2) {
+            values.put(asString(fields.get(i)), asString(fields.get(i + 1)));
+        }
+        if (values.get("documentId") != null && values.get("content") != null) {
+            hits.add(new SearchHit(values.get("documentId"), values.getOrDefault("title", ""),
+                    values.get("content"), Integer.parseInt(values.getOrDefault("chunkIndex", "0"))));
+        }
+    }
+
+    private Object field(List<?> fields, String name) {
+        for (int i = 0; i + 1 < fields.size(); i += 2) {
+            if (name.equals(asString(fields.get(i)))) return fields.get(i + 1);
+        }
+        return null;
+    }
+
     private Object execute(String command, byte[]... args) {
         return redisTemplate.execute((RedisCallback<Object>) connection -> connection.execute(command, args));
+    }
+
+    private Object executeMulti(String command, byte[]... args) {
+        return redisTemplate.execute((RedisCallback<Object>) connection -> lettuce(connection)
+                .execute(command, new NestedMultiOutput<>(ByteArrayCodec.INSTANCE), args));
+    }
+
+    private LettuceConnection lettuce(RedisConnection connection) {
+        RedisConnection current = connection;
+        while (current instanceof DecoratedRedisConnection decorated) current = decorated.getDelegate();
+        if (current instanceof LettuceConnection lettuce) return lettuce;
+        throw new IllegalStateException("RediSearch requires a Lettuce Redis connection");
     }
 
     private byte[] vectorBytes(float[] vector) {
