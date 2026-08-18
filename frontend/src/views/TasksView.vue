@@ -14,6 +14,38 @@ const isMentor = computed(() => auth.user?.role === 'MENTOR')
 const types = ['MEETING', 'PROGRESS', 'DOCUMENT', 'CODE', 'EXPERIMENT', 'OTHER']
 const priorities = ['LOW', 'MEDIUM', 'HIGH']
 const statuses = ['TODO', 'IN_PROGRESS', 'COMPLETED']
+const UK_TIME_ZONE = 'Europe/London'
+const ukDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: UK_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23'
+})
+
+function ukDateTimeParts(value: Date) {
+  return Object.fromEntries(ukDateTimeFormatter.formatToParts(value).map(({ type, value: part }) => [type, part])) as Record<string, string>
+}
+function toUkDateTimeInput(value: string) {
+  const parts = ukDateTimeParts(new Date(value))
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
+}
+function ukOffsetAt(instant: number) {
+  const parts = ukDateTimeParts(new Date(instant))
+  const localAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute))
+  return localAsUtc - instant
+}
+function ukDateTimeToIso(value: string) {
+  const [date, time] = value.split('T')
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute)
+  let instant = localAsUtc
+  for (let attempt = 0; attempt < 2; attempt += 1) instant = localAsUtc - ukOffsetAt(instant)
+  return new Date(instant).toISOString()
+}
 
 onMounted(async () => {
   if (isMentor.value) {
@@ -31,16 +63,16 @@ async function load() {
   } finally { loading.value = false }
 }
 function openCreate() { editingId.value = null; Object.assign(form, { studentId: selectedStudent.value, title: '', description: '', type: 'PROGRESS', priority: 'MEDIUM', deadlineAt: '' }); dialog.value = true }
-function openEdit(task: Task) { editingId.value = task.id; Object.assign(form, { studentId: task.studentId, title: task.title, description: task.description || '', type: task.type, priority: task.priority, deadlineAt: task.deadlineAt.slice(0, 16) }); dialog.value = true }
+function openEdit(task: Task) { editingId.value = task.id; Object.assign(form, { studentId: task.studentId, title: task.title, description: task.description || '', type: task.type, priority: task.priority, deadlineAt: toUkDateTimeInput(task.deadlineAt) }); dialog.value = true }
 async function save() {
-  const payload = { ...form, studentId: isMentor.value ? form.studentId : undefined, deadlineAt: new Date(form.deadlineAt).toISOString() }
+  const payload = { ...form, studentId: isMentor.value ? form.studentId : undefined, deadlineAt: ukDateTimeToIso(form.deadlineAt) }
   if (editingId.value) await api.put(`/tasks/${editingId.value}`, payload); else await api.post('/tasks', payload)
   ElMessage.success(editingId.value ? 'Task updated' : 'Task created'); dialog.value = false; await load()
 }
 async function changeStatus(task: Task, value: string) { await api.patch(`/tasks/${task.id}/status`, { status: value }); ElMessage.success('Status updated'); await load() }
 async function remove(task: Task) { await ElMessageBox.confirm(`Delete “${task.title}”?`, 'Delete task', { type: 'warning' }); await api.delete(`/tasks/${task.id}`); ElMessage.success('Task deleted'); await load() }
 const overdue = (task: Task) => task.status !== 'COMPLETED' && new Date(task.deadlineAt) < new Date()
-const date = (v: string) => new Date(v).toLocaleString('en-GB')
+const date = (v: string) => new Date(v).toLocaleString('en-GB', { timeZone: UK_TIME_ZONE })
 const assignedBy = (task: Task) => task.creatorId === auth.user?.id
   ? 'You'
   : isMentor.value ? students.value.find(student => student.id === task.creatorId)?.realName || 'Student' : 'Mentor'
