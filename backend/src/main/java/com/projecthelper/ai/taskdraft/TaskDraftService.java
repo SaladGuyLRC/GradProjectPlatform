@@ -179,12 +179,14 @@ public class TaskDraftService {
         DeadlineParser.ParseResult result = deadlineParser.parse(deadlineText);
         if (result.status() == DeadlineParser.ParseStatus.AMBIGUOUS) {
             issues.add(new TaskDraftResult.Issue("deadline", "DEADLINE_AMBIGUOUS",
-                    "The deadline is ambiguous. Please provide a specific date and time."));
+                    "The deadline is ambiguous. Please provide a specific date and time. "
+                            + deadlineParser.supportedExamplesMessage()));
             return null;
         }
         if (result.status() == DeadlineParser.ParseStatus.UNRECOGNIZED) {
             issues.add(new TaskDraftResult.Issue("deadline", "DEADLINE_UNRECOGNIZED",
-                    "I could not understand the deadline. Please provide a clear date and time."));
+                    "I could not understand the deadline. Please provide a clear date and time. "
+                            + deadlineParser.supportedExamplesMessage()));
             return null;
         }
         return result.deadlineAt();

@@ -68,7 +68,10 @@ class TaskDraftServiceTest {
                 "some time later", "CODE", "MEDIUM");
 
         assertEquals("NEEDS_INPUT", result.status());
-        assertTrue(result.issues().stream().anyMatch(issue -> "DEADLINE_UNRECOGNIZED".equals(issue.code())));
+        assertTrue(result.issues().stream().anyMatch(issue -> "DEADLINE_UNRECOGNIZED".equals(issue.code())
+                && issue.message().contains("Supported formats include")
+                && issue.message().contains("tomorrow at 11am")
+                && issue.message().contains("Europe/London")));
         verify(store, never()).save(any());
     }
 

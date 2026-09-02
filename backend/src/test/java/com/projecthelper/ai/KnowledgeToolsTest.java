@@ -24,11 +24,27 @@ class KnowledgeToolsTest {
     @Test
     void searchAddsDocumentCitationsToExecutionContext() {
         when(knowledgeService.search("format")).thenReturn(List.of(
-                new RedisVectorStore.SearchHit("doc-1", "Thesis Guide", "Use the approved format.", 2)));
+                new RedisVectorStore.SearchHit("doc-1", "Thesis Guide", "thesis-guide.pdf",
+                        "Use the approved format.", 2, 7, 8)));
         String result = new KnowledgeTools(knowledgeService).searchPublicKnowledge("format");
 
-        assertTrue(result.contains("Thesis Guide"));
+        assertTrue(result.contains("thesis-guide.pdf, Pages 7-8"));
         assertEquals("doc-1", AiExecutionContext.citations().getFirst().documentId());
+        assertEquals("thesis-guide.pdf", AiExecutionContext.citations().getFirst().originalFilename());
         assertEquals(2, AiExecutionContext.citations().getFirst().chunkIndex());
+        assertEquals(7, AiExecutionContext.citations().getFirst().pageStart());
+        assertEquals(8, AiExecutionContext.citations().getFirst().pageEnd());
+    }
+
+    @Test
+    void fallsBackToTitleWhenExistingIndexHasNoOriginalFilename() {
+        when(knowledgeService.search("format")).thenReturn(List.of(
+                new RedisVectorStore.SearchHit("doc-1", "Thesis Guide", "",
+                        "Use the approved format.", 2, 0, 0)));
+
+        String result = new KnowledgeTools(knowledgeService).searchPublicKnowledge("format");
+
+        assertTrue(result.contains("Thesis Guide, page unavailable"));
+        assertEquals("Thesis Guide", AiExecutionContext.citations().getFirst().originalFilename());
     }
 }

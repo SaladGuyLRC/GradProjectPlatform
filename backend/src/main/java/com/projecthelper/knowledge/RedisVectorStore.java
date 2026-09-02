@@ -38,7 +38,9 @@ public class RedisVectorStore {
                 execute("FT.CREATE",
                         bytes(INDEX), bytes("ON"), bytes("HASH"), bytes("PREFIX"), bytes("1"), bytes(CHUNK_PREFIX),
                         bytes("SCHEMA"), bytes("documentId"), bytes("TAG"), bytes("title"), bytes("TEXT"),
-                        bytes("content"), bytes("TEXT"), bytes("chunkIndex"), bytes("NUMERIC"),
+                        bytes("originalFilename"), bytes("TEXT"), bytes("content"), bytes("TEXT"),
+                        bytes("chunkIndex"), bytes("NUMERIC"), bytes("pageStart"), bytes("NUMERIC"),
+                        bytes("pageEnd"), bytes("NUMERIC"),
                         bytes("contentVector"), bytes("VECTOR"), bytes("FLAT"), bytes("6"),
                         bytes("TYPE"), bytes("FLOAT32"), bytes("DIM"), bytes(String.valueOf(properties.getEmbeddingDimension())),
                         bytes("DISTANCE_METRIC"), bytes("COSINE"));
@@ -47,20 +49,27 @@ public class RedisVectorStore {
                 log.warn("Redis vector index is unavailable: {}", exception.getMessage());
             }
         }
+        addSchemaField("originalFilename", "TEXT");
+        addSchemaField("pageStart", "NUMERIC");
+        addSchemaField("pageEnd", "NUMERIC");
     }
 
-    public int replaceDocument(String documentId, String title, List<String> chunks) {
+    public int replaceDocument(String documentId, String title, String originalFilename,
+                               List<KnowledgeChunk> chunks) {
         deleteDocument(documentId);
         String setKey = documentSetKey(documentId);
-        for (int i = 0; i < chunks.size(); i++) {
+        for (KnowledgeChunk chunk : chunks) {
             String chunkId = UUID.randomUUID().toString();
             String redisKey = CHUNK_PREFIX + chunkId;
-            float[] vector = embeddingClient.embed(chunks.get(i));
+            float[] vector = embeddingClient.embed(chunk.content());
             Map<byte[], byte[]> fields = new HashMap<>();
             fields.put(bytes("documentId"), bytes(documentId));
             fields.put(bytes("title"), bytes(title));
-            fields.put(bytes("content"), bytes(chunks.get(i)));
-            fields.put(bytes("chunkIndex"), bytes(String.valueOf(i)));
+            fields.put(bytes("originalFilename"), bytes(originalFilename == null ? title : originalFilename));
+            fields.put(bytes("content"), bytes(chunk.content()));
+            fields.put(bytes("chunkIndex"), bytes(String.valueOf(chunk.chunkIndex())));
+            fields.put(bytes("pageStart"), bytes(String.valueOf(chunk.pageStart())));
+            fields.put(bytes("pageEnd"), bytes(String.valueOf(chunk.pageEnd())));
             fields.put(bytes("contentVector"), vectorBytes(vector));
             redisTemplate.execute((RedisCallback<Void>) connection -> {
                 connection.hashCommands().hMSet(bytes(redisKey), fields);
@@ -83,8 +92,9 @@ public class RedisVectorStore {
         Object raw = executeMulti("FT.SEARCH", bytes(INDEX),
                 bytes("*=>[KNN " + topK + " @contentVector $vector AS score]"),
                 bytes("PARAMS"), bytes("2"), bytes("vector"), vectorBytes(queryVector),
-                bytes("SORTBY"), bytes("score"), bytes("RETURN"), bytes("4"),
-                bytes("documentId"), bytes("title"), bytes("content"), bytes("chunkIndex"),
+                bytes("SORTBY"), bytes("score"), bytes("RETURN"), bytes("7"),
+                bytes("documentId"), bytes("title"), bytes("originalFilename"), bytes("content"),
+                bytes("chunkIndex"), bytes("pageStart"), bytes("pageEnd"),
                 bytes("DIALECT"), bytes("2"));
         return parse(raw);
     }
@@ -118,7 +128,10 @@ public class RedisVectorStore {
         }
         if (values.get("documentId") != null && values.get("content") != null) {
             hits.add(new SearchHit(values.get("documentId"), values.getOrDefault("title", ""),
-                    values.get("content"), Integer.parseInt(values.getOrDefault("chunkIndex", "0"))));
+                    values.getOrDefault("originalFilename", ""), values.get("content"),
+                    Integer.parseInt(values.getOrDefault("chunkIndex", "0")),
+                    Integer.parseInt(values.getOrDefault("pageStart", "0")),
+                    Integer.parseInt(values.getOrDefault("pageEnd", values.getOrDefault("pageStart", "0")))));
         }
     }
 
@@ -136,6 +149,14 @@ public class RedisVectorStore {
     private Object executeMulti(String command, byte[]... args) {
         return redisTemplate.execute((RedisCallback<Object>) connection -> lettuce(connection)
                 .execute(command, new NestedMultiOutput<>(ByteArrayCodec.INSTANCE), args));
+    }
+
+    private void addSchemaField(String field, String type) {
+        try {
+            execute("FT.ALTER", bytes(INDEX), bytes("SCHEMA"), bytes("ADD"), bytes(field), bytes(type));
+        } catch (Exception ignored) {
+            // The field may already exist on an upgraded index.
+        }
     }
 
     private LettuceConnection lettuce(RedisConnection connection) {
@@ -158,5 +179,6 @@ public class RedisVectorStore {
     }
     private String documentSetKey(String documentId) { return DOCUMENT_SET_PREFIX + documentId + ":chunks"; }
 
-    public record SearchHit(String documentId, String title, String content, int chunkIndex) {}
+    public record SearchHit(String documentId, String title, String originalFilename, String content,
+                            int chunkIndex, int pageStart, int pageEnd) {}
 }

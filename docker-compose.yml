@@ -11,7 +11,7 @@ services:
     image: redis/redis-stack-server:7.4.0-v6
     container_name: project-helper-redis
     ports:
-      - "6379:6379"
+      - "16381:6379"
     volumes:
       - project-helper-redis:/data
 

@@ -30,6 +30,7 @@ public final class AiExecutionContext {
     public static TaskDraftResult taskDraftResult() { return TASK_DRAFT_RESULT.get(); }
     public static void clear() { CITATIONS.remove(); ACTIONS.remove(); TASK_DRAFT_RESULT.remove(); }
 
-    public record Citation(String documentId, String title, int chunkIndex) {}
+    public record Citation(String documentId, String title, String originalFilename,
+                           int chunkIndex, int pageStart, int pageEnd) {}
     public record Action(String type, String entityId, String summary) {}
 }

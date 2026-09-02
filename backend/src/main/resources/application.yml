@@ -7,7 +7,7 @@ spring:
       auto-index-creation: true
     redis:
       host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
+      port: ${REDIS_PORT:16381}
       timeout: 5s
   servlet:
     multipart:

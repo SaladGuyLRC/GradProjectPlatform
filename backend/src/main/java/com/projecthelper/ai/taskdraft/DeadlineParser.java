@@ -25,6 +25,13 @@ import java.util.regex.Pattern;
 @Component
 public class DeadlineParser {
     public static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/London");
+    private static final List<String> SUPPORTED_EXAMPLES = List.of(
+            "3 September 2026 at 19:00",
+            "3 Sep 2026 at 7pm",
+            "3 Sep 7pm 2026",
+            "tomorrow at 11am",
+            "next Monday at 09:00",
+            "2026-09-03 19:00");
 
     private static final Pattern RELATIVE = Pattern.compile(
             "(?i)^(today|tomorrow|day after tomorrow)(?:\\s+at)?\\s+(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?$");
@@ -106,6 +113,11 @@ public class DeadlineParser {
     public String display(Instant instant) {
         return DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm", Locale.UK)
                 .format(instant.atZone(BUSINESS_ZONE));
+    }
+
+    public String supportedExamplesMessage() {
+        return "Supported formats include:\n- " + String.join("\n- ", SUPPORTED_EXAMPLES)
+                + "\nAll times are interpreted in UK time (Europe/London).";
     }
 
     private ParseResult relativeResult(LocalDate date, Matcher matcher, int hourGroup) {

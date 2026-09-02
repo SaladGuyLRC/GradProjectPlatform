@@ -24,7 +24,7 @@ public class AiService {
             + "For task results, treat the provided overdue field as authoritative: label every task with overdue=true as Overdue, and never label overdue=false or an absent field as Overdue. "
             + "When a user asks to create a task, call prepareTaskDraft once and pass the user's original deadline wording in deadlineText. "
             + "Never calculate or provide a timestamp, never claim a task was created from a draft, and wait for the user to confirm the structured draft in the interface. "
-            + "Never submit or review weekly reports and never delete important business data. Answer in clear English and cite knowledge-base sources.";
+            + "Never submit or review weekly reports and never delete important business data. Answer in clear English and cite knowledge-base sources using only the returned original filename and page metadata; never invent page numbers.";
 
     private final ObjectProvider<ChatClient> chatClientProvider;
     private final AiConversationStore conversations;

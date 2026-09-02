@@ -1,3 +1,5 @@
 package com.projecthelper.knowledge.parser;
 
-public record ParsedDocument(String text, int pageCount) {}
+import java.util.List;
+
+public record ParsedDocument(List<ParsedPage> pages, int pageCount) {}

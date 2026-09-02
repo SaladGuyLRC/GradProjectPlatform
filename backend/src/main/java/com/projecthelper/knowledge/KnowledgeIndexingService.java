@@ -1,6 +1,7 @@
 package com.projecthelper.knowledge;
 
 import com.projecthelper.knowledge.parser.DocumentParserRegistry;
+import com.projecthelper.knowledge.parser.ParsedPage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -31,8 +32,9 @@ public class KnowledgeIndexingService {
             documentRepository.save(document);
             var parser = parserRegistry.requireParser(document.getOriginalFilename(), document.getMimeType());
             var parsed = parser.parse(Path.of(document.getStoredPath()));
-            List<String> chunks = split(parsed.text());
-            int count = vectorStore.replaceDocument(document.getId(), document.getTitle(), chunks);
+            List<KnowledgeChunk> chunks = split(parsed.pages());
+            int count = vectorStore.replaceDocument(document.getId(), document.getTitle(),
+                    document.getOriginalFilename(), chunks);
             document.setStatus(KnowledgeStatus.INDEXED);
             document.setChunkCount(count);
             document.setIndexedAt(Instant.now());
@@ -47,22 +49,28 @@ public class KnowledgeIndexingService {
         }
     }
 
-    private List<String> split(String text) {
-        String normalized = text.replaceAll("[\\t ]+", " ").replaceAll("\\n{3,}", "\\n\\n").trim();
+    private List<KnowledgeChunk> split(List<ParsedPage> pages) {
         int chunkSize = properties.getChunkSize();
         int overlap = Math.min(properties.getChunkOverlap(), chunkSize - 1);
-        List<String> chunks = new ArrayList<>();
-        int start = 0;
-        while (start < normalized.length()) {
-            int end = Math.min(normalized.length(), start + chunkSize);
-            if (end < normalized.length()) {
-                int boundary = normalized.lastIndexOf('\n', end);
-                if (boundary > start + chunkSize / 2) end = boundary;
+        List<KnowledgeChunk> chunks = new ArrayList<>();
+        int chunkIndex = 0;
+        for (ParsedPage page : pages) {
+            String normalized = page.text().replaceAll("[\\t ]+", " ")
+                    .replaceAll("\\n{3,}", "\\n\\n").trim();
+            int start = 0;
+            while (start < normalized.length()) {
+                int end = Math.min(normalized.length(), start + chunkSize);
+                if (end < normalized.length()) {
+                    int boundary = normalized.lastIndexOf('\n', end);
+                    if (boundary > start + chunkSize / 2) end = boundary;
+                }
+                String chunk = normalized.substring(start, end).trim();
+                if (!chunk.isBlank()) {
+                    chunks.add(new KnowledgeChunk(chunk, chunkIndex++, page.pageNumber(), page.pageNumber()));
+                }
+                if (end == normalized.length()) break;
+                start = Math.max(start + 1, end - overlap);
             }
-            String chunk = normalized.substring(start, end).trim();
-            if (!chunk.isBlank()) chunks.add(chunk);
-            if (end == normalized.length()) break;
-            start = Math.max(start + 1, end - overlap);
         }
         return chunks;
     }

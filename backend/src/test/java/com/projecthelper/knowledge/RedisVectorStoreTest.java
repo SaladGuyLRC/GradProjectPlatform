@@ -35,8 +35,11 @@ class RedisVectorStoreTest {
                         bytes("extra_attributes"), List.of(
                                 bytes("documentId"), bytes("doc-1"),
                                 bytes("title"), bytes("Guide"),
+                                bytes("originalFilename"), bytes("guide.pdf"),
                                 bytes("content"), bytes("Answer"),
-                                bytes("chunkIndex"), bytes("2")),
+                                bytes("chunkIndex"), bytes("2"),
+                                bytes("pageStart"), bytes("4"),
+                                bytes("pageEnd"), bytes("4")),
                         bytes("values"), List.of())),
                 bytes("total_results"), 1L,
                 bytes("warning"), List.of());
@@ -47,7 +50,8 @@ class RedisVectorStoreTest {
 
         var hits = store.search("question", 3);
 
-        assertEquals(List.of(new RedisVectorStore.SearchHit("doc-1", "Guide", "Answer", 2)), hits);
+        assertEquals(List.of(new RedisVectorStore.SearchHit(
+                "doc-1", "Guide", "guide.pdf", "Answer", 2, 4, 4)), hits);
         verify(lettuce).execute(anyString(), any(NestedMultiOutput.class), any(byte[][].class));
     }
 

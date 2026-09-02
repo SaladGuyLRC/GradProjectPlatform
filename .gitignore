@@ -37,3 +37,6 @@
 **/.claude/
 **/.codex/
 .gstack/
+
+# Local research and document-generation artifacts
+.artifacts/

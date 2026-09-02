@@ -3,7 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import { CircleCheck, Close, Promotion, RefreshRight } from '@element-plus/icons-vue'
 import { api, type ApiResponse } from '../api'
 
-interface Citation { documentId: string; title: string; chunkIndex: number }
+interface Citation { documentId: string; title: string; originalFilename: string; chunkIndex: number; pageStart: number; pageEnd: number }
 interface Action { type: string; entityId: string; summary: string }
 interface TaskDraft {
   draftId: string
@@ -163,7 +163,7 @@ function label(value: string) {
                 <el-button type="primary" :icon="CircleCheck" :loading="m.taskDraft.pendingAction === 'confirm'" :disabled="!!m.taskDraft.pendingAction" @click="confirmDraft(m.taskDraft)">Confirm</el-button>
               </div>
             </div>
-            <div v-if="m.citations?.length" class="evidence"><strong>Sources</strong><span v-for="c in m.citations" :key="`${c.documentId}-${c.chunkIndex}`">{{ c.title }} · chunk {{ c.chunkIndex + 1 }}</span></div>
+            <div v-if="m.citations?.length" class="evidence"><strong>Sources</strong><span v-for="c in m.citations" :key="`${c.documentId}-${c.chunkIndex}`">{{ c.originalFilename || c.title }} · {{ c.pageStart > 0 ? (c.pageStart === c.pageEnd ? `Page ${c.pageStart}` : `Pages ${c.pageStart}-${c.pageEnd}`) : 'Page unavailable' }}</span></div>
             <div v-if="m.actions?.length" class="evidence actions"><strong>Actions</strong><span v-for="a in m.actions" :key="a.entityId">{{ a.type }}: {{ a.summary }}</span></div>
           </div>
         </article>
