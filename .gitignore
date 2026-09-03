@@ -40,3 +40,6 @@
 
 # Local research and document-generation artifacts
 .artifacts/
+
+# Personal presentation and viva preparation notes
+VIVA_PREPARATION_*.md
