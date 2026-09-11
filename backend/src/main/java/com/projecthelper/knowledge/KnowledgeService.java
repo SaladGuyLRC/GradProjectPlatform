@@ -30,6 +30,7 @@ public class KnowledgeService {
     private final CurrentUserService currentUserService;
 
     public KnowledgeDocument upload(String title, String description, MultipartFile file) {
+        // 知识库只接收公开 PDF；保存原文件后异步切块、向量化并写入 Redis Stack。
         if (file.isEmpty()) throw BusinessException.badRequest("The PDF file cannot be empty");
         if (file.getSize() > 20L * 1024 * 1024) throw BusinessException.badRequest("The PDF cannot exceed 20 MB");
         String original = file.getOriginalFilename() == null ? "document.pdf" : file.getOriginalFilename();
@@ -81,6 +82,7 @@ public class KnowledgeService {
     }
 
     public KnowledgeDocument reindex(String id) {
+        // 重建索引保留 MongoDB 文档元数据，仅重新生成 Redis 中的向量片段。
         KnowledgeDocument document = get(id);
         if (document.getStatus() == KnowledgeStatus.PROCESSING) throw BusinessException.conflict("The document is already being processed");
         document.setStatus(KnowledgeStatus.UPLOADED);
@@ -104,6 +106,7 @@ public class KnowledgeService {
     }
 
     public List<RedisVectorStore.SearchHit> search(String question) {
+        // 对外搜索固定返回少量候选片段，供普通知识库页面或 AI 工具继续组织答案。
         if (question == null || question.isBlank()) throw BusinessException.badRequest("The question cannot be empty");
         return vectorStore.search(question.trim(), 3);
     }

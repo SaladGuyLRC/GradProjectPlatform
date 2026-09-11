@@ -30,6 +30,7 @@ public class TaskTools {
     public String findTasks(
             @ToolParam(description = "Assigned student name for a mentor; omit for a student", required = false) String studentName,
             @ToolParam(description = "Optional status: TODO, IN_PROGRESS or COMPLETED", required = false) String status) {
+        // 工具返回结构化 JSON；overdue 由后端根据当前时间计算，模型只能读取不能推断。
         TaskStatus parsed = status == null || status.isBlank() ? null : TaskStatus.valueOf(status.toUpperCase());
         Instant now = Instant.now();
         List<ObjectNode> tasks = taskService.listForAi(studentName, parsed).stream().map(task -> {
@@ -53,6 +54,7 @@ public class TaskTools {
             @ToolParam(description = "The user's original deadline wording, for example tomorrow at 11 AM; omit only when the user gave no deadline", required = false) String deadlineText,
             @ToolParam(description = "MEETING, PROGRESS, DOCUMENT, CODE, EXPERIMENT or OTHER", required = false) String type,
             @ToolParam(description = "LOW, MEDIUM or HIGH", required = false) String priority) {
+        // AI 只能请求“准备草稿”，真正创建必须等待用户在界面点击 Confirm。
         TaskDraftResult result;
         try {
             result = taskDraftService.prepare(studentName, title, description, deadlineText, type, priority);

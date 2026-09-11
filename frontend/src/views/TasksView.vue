@@ -38,6 +38,7 @@ function ukOffsetAt(instant: number) {
   return localAsUtc - instant
 }
 function ukDateTimeToIso(value: string) {
+  // 表单按英国本地时间编辑，提交前转换为带时区含义的 UTC ISO 时间。
   const [date, time] = value.split('T')
   const [year, month, day] = date.split('-').map(Number)
   const [hour, minute] = time.split(':').map(Number)
@@ -71,8 +72,10 @@ async function save() {
 }
 async function changeStatus(task: Task, value: string) { await api.patch(`/tasks/${task.id}/status`, { status: value }); ElMessage.success('Status updated'); await load() }
 async function remove(task: Task) { await ElMessageBox.confirm(`Delete “${task.title}”?`, 'Delete task', { type: 'warning' }); await api.delete(`/tasks/${task.id}`); ElMessage.success('Task deleted'); await load() }
+// 已完成任务不再标记 Overdue；未完成任务由当前时间与截止时间比较得出。
 const overdue = (task: Task) => task.status !== 'COMPLETED' && new Date(task.deadlineAt) < new Date()
 const date = (v: string) => new Date(v).toLocaleString('en-GB', { timeZone: UK_TIME_ZONE })
+// 展示派发者时优先使用当前用户语义，避免把内部 ID 暴露给界面用户。
 const assignedBy = (task: Task) => task.creatorId === auth.user?.id
   ? 'You'
   : isMentor.value ? students.value.find(student => student.id === task.creatorId)?.realName || 'Student' : 'Mentor'

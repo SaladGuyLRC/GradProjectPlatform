@@ -34,6 +34,7 @@ public class AiService {
     private String apiKey;
 
     public AiChatResponse chat(AiChatRequest request) {
+        // 对话上下文按“用户 + conversationId”隔离，防止不同用户读取彼此的历史消息。
         var actor = currentUserService.require();
         if (apiKey == null || apiKey.isBlank() || "replace-me".equals(apiKey)) {
             throw new BusinessException(HttpStatus.SERVICE_UNAVAILABLE, "AI_NOT_CONFIGURED",
@@ -54,6 +55,7 @@ public class AiService {
         }
         AiExecutionContext.reset();
         try {
+            // 工具调用由模型决定，但工具内部仍执行权限和字段验证。
             var response = chatClient.prompt().system(SYSTEM).messages(history).user(message).call();
             String answer = response.content() == null ? "Unable to generate an answer right now." : response.content();
             var draftResult = AiExecutionContext.taskDraftResult();

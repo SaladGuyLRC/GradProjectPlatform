@@ -72,6 +72,7 @@ public class DeadlineParser {
     }
 
     public ParseResult parse(String text) {
+        // 先尝试确定格式，再处理相对日期；所有结果最终统一转换为英国时区的 Instant。
         if (text == null || text.isBlank()) return ParseResult.unrecognized();
         String value = text.trim()
                 .replaceAll("(?i)\\s+at\\s+", " ")
@@ -138,6 +139,7 @@ public class DeadlineParser {
     }
 
     private ParseResult atBusinessZone(LocalDateTime localDateTime) {
+        // 夏令时切换可能产生不存在或重复的本地时间，遇到这两类情况不擅自猜测。
         List<ZoneOffset> offsets = BUSINESS_ZONE.getRules().getValidOffsets(localDateTime);
         if (offsets.size() != 1) return ParseResult.ambiguous();
         ZonedDateTime zoned = ZonedDateTime.ofStrict(localDateTime, offsets.getFirst(), BUSINESS_ZONE);

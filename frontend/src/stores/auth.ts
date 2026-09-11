@@ -11,12 +11,14 @@ export const useAuthStore = defineStore('auth', {
   getters: { isAuthenticated: () => Boolean(localStorage.getItem('ph_token')) },
   actions: {
     async login(username: string, password: string) {
+      // 登录成功后保存 JWT 和用户概要，后续 API 请求由拦截器自动携带令牌。
       const { data } = await api.post<ApiResponse<{ token: string; user: UserInfo }>>('/auth/login', { username, password })
       localStorage.setItem('ph_token', data.data.token)
       localStorage.setItem('ph_user', JSON.stringify(data.data.user))
       this.user = data.data.user
     },
     async loadMe() {
+      // 启动或刷新页面时向后端确认令牌对应的最新用户状态。
       const { data } = await api.get<ApiResponse<UserInfo>>('/auth/me')
       this.user = data.data
       localStorage.setItem('ph_user', JSON.stringify(data.data))

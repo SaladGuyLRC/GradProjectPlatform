@@ -23,6 +23,7 @@ public class KnowledgeIndexingService {
 
     @Async
     public void indexAsync(String documentId) {
+        // 索引在后台执行，文档状态通过 MongoDB 持久化，前端可据此显示 processing/indexed/failed。
         KnowledgeDocument document = documentRepository.findById(documentId).orElse(null);
         if (document == null) return;
         try {
@@ -50,6 +51,7 @@ public class KnowledgeIndexingService {
     }
 
     private List<KnowledgeChunk> split(List<ParsedPage> pages) {
+        // 按页切分并保留少量重叠文本，兼顾上下文连续性和向量检索粒度。
         int chunkSize = properties.getChunkSize();
         int overlap = Math.min(properties.getChunkOverlap(), chunkSize - 1);
         List<KnowledgeChunk> chunks = new ArrayList<>();

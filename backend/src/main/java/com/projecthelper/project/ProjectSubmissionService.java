@@ -41,6 +41,7 @@ public class ProjectSubmissionService {
     }
 
     public SubmissionView uploadForStudent(MultipartFile file) {
+        // 上传物绑定到当前学生项目，并通过大小、扩展名、文件头和 SHA-256 去重。
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
                 .orElseThrow(() -> BusinessException.badRequest("Create your project before uploading a submission"));
@@ -72,6 +73,7 @@ public class ProjectSubmissionService {
     }
 
     public List<SubmissionView> listForMentor(String studentId) {
+        // 导师只能查看自己负责学生的提交物，具体关系由 ProjectService 再次确认。
         User mentor = currentUserService.require();
         User student = projectService.requireSupervisedStudent(mentor, studentId);
         GraduationProject project = projectRepository.findByStudentId(student.getId()).orElse(null);
@@ -115,6 +117,7 @@ public class ProjectSubmissionService {
     }
 
     private void validatePdf(MultipartFile file) {
+        // 仅检查真实 PDF 文件头和大小，不能只信任浏览器传来的 MIME 类型。
         if (file == null || file.isEmpty()) throw BusinessException.badRequest("The PDF file cannot be empty");
         if (file.getSize() > MAX_FILE_SIZE) throw BusinessException.badRequest("The PDF cannot exceed 20 MB");
         String filename = originalFilename(file);

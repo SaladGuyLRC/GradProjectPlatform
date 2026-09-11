@@ -27,6 +27,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        // 登录只返回短期 JWT；密码本身只与数据库中的 BCrypt 哈希比较，不会被保存或回传。
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS", "Invalid username or password"));
         if (user.getStatus() != UserStatus.ACTIVE || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
@@ -42,6 +43,7 @@ public class AuthController {
 
     @PutMapping("/password")
     public ApiResponse<Void> updatePassword(@Valid @RequestBody PasswordRequest request) {
+        // 修改密码必须由当前登录用户发起，并先验证旧密码，管理员不能代替用户修改。
         User user = currentUserService.require();
         if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
             throw BusinessException.badRequest("Current password is incorrect");

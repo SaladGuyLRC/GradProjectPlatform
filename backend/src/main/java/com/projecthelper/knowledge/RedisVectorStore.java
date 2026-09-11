@@ -31,6 +31,7 @@ public class RedisVectorStore {
 
     @PostConstruct
     public void initializeIndex() {
+        // 应用启动时确保 Redis Stack 的向量索引存在；已存在时仅补充兼容字段。
         try {
             executeMulti("FT.INFO", bytes(INDEX));
         } catch (Exception ignored) {
@@ -56,6 +57,7 @@ public class RedisVectorStore {
 
     public int replaceDocument(String documentId, String title, String originalFilename,
                                List<KnowledgeChunk> chunks) {
+        // 重建文档采用“先删后写”，并用集合记录 chunk key，便于按文档完整清理。
         deleteDocument(documentId);
         String setKey = documentSetKey(documentId);
         for (KnowledgeChunk chunk : chunks) {
@@ -88,6 +90,7 @@ public class RedisVectorStore {
     }
 
     public List<SearchHit> search(String question, int topK) {
+        // 查询文本先转向量，再通过 RediSearch KNN 返回最相近的公开文档片段。
         float[] queryVector = embeddingClient.embed(question);
         Object raw = executeMulti("FT.SEARCH", bytes(INDEX),
                 bytes("*=>[KNN " + topK + " @contentVector $vector AS score]"),

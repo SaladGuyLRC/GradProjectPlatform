@@ -32,6 +32,7 @@ public class TaskService {
     private final CurrentUserService currentUserService;
 
     public Task create(TaskCommand command) {
+        // 普通创建路径先按当前角色解析目标学生，再确认该学生已有项目。
         User actor = currentUserService.require();
         User student = resolveTargetStudent(actor, command.studentId());
         GraduationProject project = requireProject(student.getId());
@@ -40,6 +41,7 @@ public class TaskService {
     }
 
     public AiTaskTarget resolveAiTarget(String studentName) {
+        // AI 创建任务也复用同一套学生—导师关系校验，避免模型绕过业务权限。
         User actor = currentUserService.require();
         User student;
         if (actor.getRole() == UserRole.STUDENT) {
@@ -88,6 +90,7 @@ public class TaskService {
 
     public Task createFromDraft(String sourceDraftId, String studentId, String title, String description,
                                 TaskType type, TaskPriority priority, Instant deadlineAt) {
+        // 草稿确认时再次校验目标和字段；sourceDraftId 用于幂等，防止重复点击产生多个任务。
         User actor = currentUserService.require();
         User student = resolveTargetStudent(actor, studentId);
         GraduationProject project = requireProject(student.getId());
@@ -145,6 +148,7 @@ public class TaskService {
     }
 
     public Task changeStatus(String id, TaskStatus status) {
+        // 只有被分配的学生可以更新状态，创建者（通常是导师）不能替学生完成任务。
         User actor = currentUserService.require();
         Task task = get(id);
         if (actor.getRole() != UserRole.STUDENT || !actor.getId().equals(task.getStudentId())) {
@@ -181,6 +185,7 @@ public class TaskService {
     }
 
     private User resolveTargetStudent(User actor, String requestedStudentId) {
+        // 学生只能访问自己；导师只能访问其 mentorId 关联的学生；管理员不进入任务业务边界。
         if (actor.getRole() == UserRole.STUDENT) {
             requireActive(actor);
             return actor;

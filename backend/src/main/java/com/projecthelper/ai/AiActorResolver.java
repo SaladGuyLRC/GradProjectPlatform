@@ -17,6 +17,7 @@ public class AiActorResolver {
     private final UserRepository userRepository;
 
     public User targetStudent(String studentName, boolean mentorRequiresName) {
+        // 将自然语言中的学生称呼解析为数据库用户，同时强制执行角色和导师绑定关系。
         User actor = currentUserService.require();
         if (actor.getRole() == UserRole.STUDENT) {
             if (studentName != null && !studentName.isBlank() && !actor.getRealName().equals(studentName.trim())) {

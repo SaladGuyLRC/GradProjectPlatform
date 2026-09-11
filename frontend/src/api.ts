@@ -6,6 +6,7 @@ export interface ApiResponse<T> { code: string; message: string; data: T; reques
 export const api = axios.create({ baseURL: import.meta.env.VITE_API_BASE_URL || '/api', timeout: 20000 })
 
 api.interceptors.request.use((config) => {
+  // 每次请求从本地会话读取 JWT，避免把令牌写入 URL 或业务参数。
   const token = localStorage.getItem('ph_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
@@ -17,6 +18,7 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
+    // 将后端错误码转换为用户可理解的英文提示；401 同时清理失效会话并回到登录页。
     const status = error.response?.status
     const code = error.response?.data?.code
     const taskDraftFailure = error.config?.url?.includes('/ai/task-drafts/')

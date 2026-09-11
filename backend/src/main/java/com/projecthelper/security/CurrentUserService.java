@@ -16,6 +16,7 @@ public class CurrentUserService {
     }
 
     public User require() {
+        // 控制器和服务统一从 Spring Security 上下文解析当前用户，避免客户端自行提交身份。
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new BusinessException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Please log in first");

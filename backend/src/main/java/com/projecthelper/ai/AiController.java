@@ -16,6 +16,7 @@ public class AiController {
 
     @PostMapping("/chat")
     public ApiResponse<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
+        // 控制器只负责参数校验和统一响应，权限、工具调用及错误边界由 AiService 处理。
         return ApiResponse.success(aiService.chat(request));
     }
 }

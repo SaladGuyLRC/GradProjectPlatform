@@ -20,11 +20,13 @@ public class ProjectService {
     private final CurrentUserService currentUserService;
 
     public GraduationProject myProject() {
+        // 学生只能读取自己的项目；不存在时返回 null，由前端显示创建入口。
         User student = requireStudent();
         return projectRepository.findByStudentId(student.getId()).orElse(null);
     }
 
     public GraduationProject create(ProjectCommand command) {
+        // 每名学生只能建立一个项目，项目负责人关系取自当前用户的导师绑定。
         User student = requireStudent();
         if (projectRepository.findByStudentId(student.getId()).isPresent()) throw BusinessException.conflict("Each student can create only one graduation project");
         validate(command);
@@ -36,6 +38,7 @@ public class ProjectService {
     }
 
     public GraduationProject update(ProjectCommand command) {
+        // 首份周报创建后锁定项目开始日期，保证周报周次不会因日期变更而失真。
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
                 .orElseThrow(() -> BusinessException.notFound("Create a graduation project first"));
@@ -56,6 +59,7 @@ public class ProjectService {
     }
 
     public GraduationProject mentorView(String studentId) {
+        // 导师查看项目必须通过 mentorId 关系校验，不能仅凭传入的学生 ID 越权访问。
         User mentor = currentUserService.require();
         if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can view student projects");
         User student = requireSupervisedStudent(mentor, studentId);
@@ -84,6 +88,7 @@ public class ProjectService {
     }
 
     private void validate(ProjectCommand command) {
+        // 项目日期在服务层统一校验，避免客户端绕过表单提交非法时间范围。
         if (command.startDate() != null && command.plannedEndDate() != null
                 && command.plannedEndDate().isBefore(command.startDate())) {
             throw BusinessException.badRequest("The planned end date cannot be before the start date");

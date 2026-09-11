@@ -34,6 +34,7 @@ public class TaskDraftService {
 
     public TaskDraftResult prepare(String studentName, String title, String description, String deadlineText,
                                    String type, String priority) {
+        // prepare 只生成归当前用户所有的临时草稿，不会写入真正的任务集合。
         User actor = currentUserService.require();
         List<TaskDraftResult.Issue> issues = new ArrayList<>();
         String normalizedTitle = normalizeTitle(title, issues);
@@ -45,6 +46,7 @@ public class TaskDraftService {
         boolean deadlineWasDefaulted = deadlineText == null || deadlineText.isBlank();
         Instant deadline = deadlineWasDefaulted ? now.plus(Duration.ofHours(24))
                 : parseDeadline(deadlineText, issues);
+        // 时间、枚举和权限问题在这里集中反馈给前端，避免让模型自行拼接可执行数据。
         if (deadline != null && !deadline.isAfter(now)) {
             issues.add(new TaskDraftResult.Issue("deadline", "DEADLINE_IN_PAST",
                     "The deadline must be in the future."));
@@ -70,6 +72,7 @@ public class TaskDraftService {
     }
 
     public ConfirmationResult confirm(String draftId) {
+        // 确认接口采用短锁 + 幂等 sourceDraftId，保证重复点击不会创建重复任务。
         User actor = currentUserService.require();
         TaskDraft initial = requireOwnedDraft(draftId, actor.getId());
         ConfirmationResult terminal = confirmedResult(initial);
@@ -95,6 +98,7 @@ public class TaskDraftService {
                         "The task was not created because the deadline is now in the past.");
             }
             taskService.validateAiTarget(draft.studentId());
+            // 最终写入前重新检查截止时间和学生关系，因为草稿创建后数据可能已变化。
             Task task = taskService.createFromDraft(draft.draftId(), draft.studentId(), draft.title(),
                     draft.description(), draft.type(), draft.priority(), draft.deadlineAt());
             try {

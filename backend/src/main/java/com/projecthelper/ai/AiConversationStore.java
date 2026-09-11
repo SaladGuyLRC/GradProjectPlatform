@@ -19,6 +19,7 @@ public class AiConversationStore {
     private final ObjectMapper mapper;
 
     public List<ConversationMessage> load(String userId, String conversationId) {
+        // 会话键包含用户 ID，消息列表限制为最近 20 条并由 Redis TTL 自动过期。
         List<String> values = redis.opsForList().range(key(userId, conversationId), 0, -1);
         if (values == null) return List.of();
         List<ConversationMessage> messages = new ArrayList<>();
@@ -30,6 +31,7 @@ public class AiConversationStore {
     }
 
     public void append(String userId, String conversationId, ConversationMessage message) {
+        // 追加后裁剪历史并刷新两小时 TTL，形成简单的滑动窗口记忆。
         try {
             String redisKey = key(userId, conversationId);
             redis.opsForList().rightPush(redisKey, mapper.writeValueAsString(message));

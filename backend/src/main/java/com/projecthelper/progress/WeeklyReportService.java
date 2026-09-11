@@ -27,6 +27,7 @@ public class WeeklyReportService {
     private final CurrentUserService currentUserService;
 
     public WeeklyReport create(ReportCommand command) {
+        // 周报属于学生项目；创建时限制周一日期、项目周期和每周唯一性。
         User student = requireStudent();
         GraduationProject project = projectRepository.findByStudentId(student.getId())
                 .orElseThrow(() -> BusinessException.badRequest("Create a graduation project first"));
@@ -63,6 +64,7 @@ public class WeeklyReportService {
     }
 
     public void delete(String id) {
+        // 草稿可以由所属学生删除，已提交或已审核内容保留为指导记录。
         User student = requireStudent();
         WeeklyReport report = ownedReport(id, student.getId());
         if (report.getStatus() != WeeklyReportStatus.DRAFT) throw BusinessException.conflict("Only drafts can be deleted");
@@ -100,6 +102,7 @@ public class WeeklyReportService {
     }
 
     public Page<WeeklyReport> mentorReports(WeeklyReportStatus status, int page, int size) {
+        // 导师列表主动过滤 DRAFT，避免学生未提交内容提前暴露。
         User mentor = currentUserService.require();
         if (mentor.getRole() != UserRole.MENTOR) throw BusinessException.forbidden("Only mentors can access this report");
         PageRequest request = pageable(page, size);
@@ -110,6 +113,7 @@ public class WeeklyReportService {
     }
 
     public WeeklyReport get(String id) {
+        // 读取权限按管理员、报告学生、负责导师三类主体判断；导师仍不能读取草稿。
         User actor = currentUserService.require();
         WeeklyReport report = reportRepository.findById(id).orElseThrow(() -> BusinessException.notFound("Weekly report not found"));
         boolean allowed = actor.getRole() == UserRole.ADMIN
@@ -155,6 +159,7 @@ public class WeeklyReportService {
     }
 
     private void validate(ReportCommand command, GraduationProject project) {
+        // 报告周必须落在项目起止日期对应的周一范围内，防止产生项目外周报。
         if (project.getStartDate() == null || project.getPlannedEndDate() == null) {
             throw BusinessException.badRequest("Set the project start and planned end dates before creating a weekly report");
         }

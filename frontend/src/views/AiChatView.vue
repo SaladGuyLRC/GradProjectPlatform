@@ -53,6 +53,7 @@ function newConversation() {
 }
 
 async function send() {
+  // 先把输入追加到本地消息并立即清空输入框；只有后端成功才追加 AI 回复。
   const text = input.value.trim()
   if (!text || loading.value) return
   messages.value.push({ role: 'user', content: text })
@@ -75,6 +76,7 @@ async function send() {
 }
 
 async function confirmDraft(draft: TaskDraft) {
+  // 草稿确认由用户显式触发，后端会再次校验权限、时间和幂等性。
   if (draft.pendingAction || draft.status !== 'PENDING_CONFIRMATION') return
   draft.pendingAction = 'confirm'
   draft.error = undefined
@@ -91,6 +93,7 @@ async function confirmDraft(draft: TaskDraft) {
 }
 
 async function cancelDraft(draft: TaskDraft) {
+  // 取消只改变临时草稿状态，不会创建或删除真实任务。
   if (draft.pendingAction || draft.status !== 'PENDING_CONFIRMATION') return
   draft.pendingAction = 'cancel'
   draft.error = undefined

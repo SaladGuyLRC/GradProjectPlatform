@@ -29,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authorization = request.getHeader("Authorization");
         if (authorization != null && authorization.startsWith("Bearer ")) {
             try {
+                // JWT 只携带用户 ID；每次请求仍从数据库读取用户，以便立即识别禁用账户。
                 String userId = jwtService.parseUserId(authorization.substring(7));
                 User user = userRepository.findById(userId).orElse(null);
                 if (user != null && user.getStatus() == UserStatus.ACTIVE) {
@@ -37,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (Exception ignored) {
+                // 无效或过期令牌按未登录处理，由 Spring Security 返回 401/403。
                 SecurityContextHolder.clearContext();
             }
         }
