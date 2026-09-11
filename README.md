@@ -12,7 +12,17 @@ Requirements: Java 21, Maven, Node.js 18+, Docker and Docker Compose.
    docker compose up -d
    ```
 
-2. Configure the backend environment. Copy `.env.example` to your shell environment or export the values directly. `DASHSCOPE_API_KEY` is only required for live AI chat and PDF embedding. The server starts without it and returns `AI_NOT_CONFIGURED` from `/api/ai/chat`.
+2. Configure the backend environment. The project does not automatically load `.env`, so export the variables into the current shell before starting the backend:
+
+     ```bash
+     cp .env.example .env
+     # Edit .env if required, for example to enable demo data or set DASHSCOPE_API_KEY.
+     set -a
+     source .env
+     set +a
+
+DASHSCOPE API KEY is only required for live AI chat and PDF embedding. The server starts without it and returns
+  AI NOT CONFIGURED from /api/ai/chat.
 
 3. Start the backend:
 
@@ -51,6 +61,10 @@ Login and use the returned JWT in the `Authorization: Bearer <token>` header:
 curl -s http://localhost:8080/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"student1","password":"ProjectHelper@123"}'
+  
+Copy data.token from the login response and export it before calling protected endpoints:
+
+export TOKEN='paste-the-token-from-the-login-response'
 
 curl -s 'http://localhost:8080/api/dashboard/student' -H "Authorization: Bearer $TOKEN"
 curl -s 'http://localhost:8080/api/tasks?page=0&size=20' -H "Authorization: Bearer $TOKEN"
